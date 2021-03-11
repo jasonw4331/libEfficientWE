@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace libEfficientWE\task;
 
 use libEfficientWE\shapes\Cuboid;
+use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\level\Level;
 use pocketmine\math\Vector3;
@@ -18,6 +19,8 @@ class AsyncCuboidTask extends AsyncChunksChangeTask {
 	protected $set_chunks = false;
 	/** @var string */
 	private $cuboid;
+	/** @var string */
+	private $clipboard;
 	/** @var Vector3 */
 	private $relativePos;
 	/** @var bool */
@@ -30,6 +33,7 @@ class AsyncCuboidTask extends AsyncChunksChangeTask {
 	private $block;
 
 	public function __construct(Cuboid $cuboid, Level $level, array $chunks, int $action, ?callable $callable = null) {
+		$this->clipboard = self::serialize($cuboid->getClipboard());
 		$this->cuboid = self::serialize($cuboid);
 
 		$this->setLevel($level);
@@ -41,6 +45,8 @@ class AsyncCuboidTask extends AsyncChunksChangeTask {
 	public function onRun() : void {
 		$level = $this->getChunkManager();
 		$cuboid = $this->getCuboid();
+		$cuboid->setClipboard($this->getClipboard());
+
 
 		switch($this->action) {
 			case self::PASTE:
@@ -89,5 +95,9 @@ class AsyncCuboidTask extends AsyncChunksChangeTask {
 
 	protected function getCuboid() : Cuboid {
 		return self::unserialize($this->cuboid);
+	}
+
+	protected function getClipboard() : Clipboard {
+		return self::unserialize($this->clipboard);
 	}
 }

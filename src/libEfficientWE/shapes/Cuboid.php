@@ -249,6 +249,11 @@ class Cuboid {
 		return $this->highCorner;
 	}
 
+	public function setClipboard(Clipboard $clipboard) : self {
+		$this->clipboard = $clipboard;
+		return $this;
+	}
+
 	/**
 	 * @param Level $level
 	 * @param bool $create
