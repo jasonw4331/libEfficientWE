@@ -22,10 +22,10 @@ class Cuboid {
 	/** @var Clipboard */
 	private $clipboard;
 
-	private function __construct(Vector3 $pos1, Vector3 $pos2) {
+	private function __construct(Vector3 $pos1, Vector3 $pos2, ?Clipboard $clipboard = null) {
 		$this->lowCorner = $pos1;
 		$this->highCorner = $pos2;
-		$this->clipboard = new Clipboard();
+		$this->clipboard = $clipboard ?? new Clipboard();
 	}
 
 	public static function fromVector3(Vector3 $min, Vector3 $max) : self {
