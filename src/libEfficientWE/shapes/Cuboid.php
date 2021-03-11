@@ -110,14 +110,14 @@ class Cuboid {
 		$changed = 0;
 		$time = microtime(true);
 
-		$relative_pos = $relative_pos->floor()->add($this->clipboard->getRelativePos());
+		$clipboard = $this->clipboard;
+
+		$relative_pos = $relative_pos->floor()->add($clipboard->getRelativePos());
 		$relx = $relative_pos->x;
 		$rely = $relative_pos->y;
 		$relz = $relative_pos->z;
 
-		$clipboard = $this->clipboard;
-
-		$caps = $this->clipboard->getCapVector();
+		$caps = $clipboard->getCapVector();
 		$xCap = $caps->x;
 		$yCap = $caps->y;
 		$zCap = $caps->z;
@@ -209,7 +209,7 @@ class Cuboid {
 		$minZ = $this->lowCorner->z;
 		$maxZ = $this->highCorner->z;
 
-		$find = ($find->getId() << 4) | $find->getDamage();//fullBlock
+		$find = ($find->getId() << 4) | $find->getDamage(); //fullBlock
 
 		$replaceId = $replace->getId();
 		$replaceMeta = $replace->getDamage();
