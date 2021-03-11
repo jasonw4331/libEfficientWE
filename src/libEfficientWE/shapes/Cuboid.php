@@ -129,7 +129,7 @@ class Cuboid {
 			for($z = 0; $z <= $zCap; ++$z) {
 				$zPos = $relz + $z;
 				for($y = 0; $y <= $yCap; ++$y) {
-					$fullBlock = $clipboard[Level::blockHash($x, $y, $z)] ?? null;
+					$fullBlock = $clipboard->getFullBlocks()[Level::blockHash($x, $y, $z)] ?? null;
 					if($fullBlock !== null) {
 						if($replace_air || ($fullBlock >> 4) !== Block::AIR) {
 							$yPos = $rely + $y;
