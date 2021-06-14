@@ -8,7 +8,6 @@ use libEfficientWE\utils\Clipboard;
 use libEfficientWE\utils\Utils;
 use pocketmine\block\Block;
 use pocketmine\level\ChunkManager;
-use pocketmine\level\format\Chunk;
 use pocketmine\level\Level;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
@@ -44,6 +43,14 @@ class Cuboid extends Shape {
 		$maxY = (int)max($alignedBB->minY, $alignedBB->maxY);
 		$maxZ = (int)max($alignedBB->minZ, $alignedBB->maxZ);
 		return new self(new Vector3($minX, $minY, $minZ), new Vector3($maxX, $maxY, $maxZ));
+	}
+
+	public function asyncCut(ChunkManager $level, Vector3 $relative_pos, ?callable $callable = null) : void {
+		// TODO: Implement asyncCut() method.
+	}
+
+	public function syncCut(ChunkManager $level, Vector3 $relative_pos, ?callable $callable = null) : void {
+		// TODO: Implement syncCut() method.
 	}
 
 	public function syncCopy(ChunkManager $level, Vector3 $relative_pos, ?callable $callable = null) : void {
@@ -235,6 +242,14 @@ class Cuboid extends Shape {
 		}
 	}
 
+	public function asyncRotate(Level $level, int $direction, ?callable $callable = null) : void {
+		// TODO: sync rotate on copy, async paste
+	}
+
+	public function syncRotate(ChunkManager $level, int $direction, ?callable $callable = null) : void {
+		// TODO: Implement syncRotate() method.
+	}
+
 	public function getLowCorner() : Vector3 {
 		return $this->lowCorner;
 	}
@@ -243,12 +258,7 @@ class Cuboid extends Shape {
 		return $this->highCorner;
 	}
 
-	/**
-	 * @param Level $level
-	 * @param bool $create
-	 * @return Chunk[]|null[]
-	 */
-	private function getChunks(Level $level, bool $create = true) : array {
+	protected function getChunks(ChunkManager $level) : array {
 		$chunks = [];
 
 		$minChunkX = $this->lowCorner->x >> 4;
@@ -258,7 +268,7 @@ class Cuboid extends Shape {
 
 		for($chunkX = $minChunkX; $chunkX <= $maxChunkX; ++$chunkX) {
 			for($chunkZ = $minChunkZ; $chunkZ <= $maxChunkZ; ++$chunkZ) {
-				$chunks[] = $level->getChunk($chunkX, $chunkZ, $create);
+				$chunks[] = $level->getChunk($chunkX, $chunkZ);
 			}
 		}
 
