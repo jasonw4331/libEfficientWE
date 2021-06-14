@@ -2,5 +2,5 @@ name: libEfficientWE
 version: 0.1.0
 antigen: libEfficientWE
 api:
-- 3.0.0
+- 3.21.0
 author: "jasonwynn10"
