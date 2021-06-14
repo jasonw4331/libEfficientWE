@@ -13,19 +13,17 @@ use pocketmine\level\Level;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
 
-class Cuboid {
+class Cuboid extends Shape {
 
 	/** @var Vector3 */
 	private $lowCorner;
 	/** @var Vector3 */
 	private $highCorner;
-	/** @var Clipboard */
-	private $clipboard;
 
 	private function __construct(Vector3 $pos1, Vector3 $pos2, ?Clipboard $clipboard = null) {
 		$this->lowCorner = $pos1;
 		$this->highCorner = $pos2;
-		$this->clipboard = $clipboard ?? new Clipboard();
+		parent::__construct($clipboard);
 	}
 
 	public static function fromVector3(Vector3 $min, Vector3 $max) : self {
@@ -237,21 +235,12 @@ class Cuboid {
 		}
 	}
 
-	public function getClipboard() : Clipboard {
-		return $this->clipboard;
-	}
-
 	public function getLowCorner() : Vector3 {
 		return $this->lowCorner;
 	}
 
 	public function getHighCorner() : Vector3 {
 		return $this->highCorner;
-	}
-
-	public function setClipboard(Clipboard $clipboard) : self {
-		$this->clipboard = $clipboard;
-		return $this;
 	}
 
 	/**

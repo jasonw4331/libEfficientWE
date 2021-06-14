@@ -3,39 +3,18 @@ declare(strict_types=1);
 namespace libEfficientWE\task;
 
 use libEfficientWE\shapes\Cuboid;
-use libEfficientWE\utils\Clipboard;
-use pocketmine\block\Block;
 use pocketmine\level\Level;
-use pocketmine\math\Vector3;
 
 class AsyncCuboidTask extends AsyncChunksChangeTask {
 
-	public const PASTE = 0;
-	public const REPLACE = 0;
-	public const SET = 0;
-	/** @var int */
-	protected $action;
-	/** @var bool */
-	protected $set_chunks = false;
-	/** @var string */
-	private $cuboid;
-	/** @var string */
-	private $clipboard;
-	/** @var Vector3 */
-	private $relativePos;
-	/** @var bool */
-	private $replaceAir;
-	/** @var Block */
-	private $find;
-	/** @var Block */
-	private $replace;
-	/** @var Block */
-	private $block;
+	protected int $action;
+	protected bool $set_chunks = false;
+	private string $cuboid;
 
 	public function __construct(Cuboid $cuboid, Level $level, array $chunks, int $action, ?callable $callable = null) {
-		$this->clipboard = self::serialize($cuboid->getClipboard());
 		$this->cuboid = self::serialize($cuboid);
 
+		$this->setClipboard($cuboid->getClipboard());
 		$this->setLevel($level);
 		$this->setChunks($chunks);
 		$this->action = $action;
@@ -68,36 +47,7 @@ class AsyncCuboidTask extends AsyncChunksChangeTask {
 		}
 	}
 
-	public function setRelativePos(Vector3 $relativePos) : self {
-		$this->relativePos = $relativePos;
-		return $this;
-	}
-
-	public function replaceAir(bool $replace_air) : self {
-		$this->replaceAir = $replace_air;
-		return $this;
-	}
-
-	public function find(Block $block) : self {
-		$this->find = $block;
-		return $this;
-	}
-
-	public function replace(Block $block) : self {
-		$this->replace = $block;
-		return $this;
-	}
-
-	public function setBlock(Block $block) : self {
-		$this->block = $block;
-		return $this;
-	}
-
 	protected function getCuboid() : Cuboid {
 		return self::unserialize($this->cuboid);
-	}
-
-	protected function getClipboard() : Clipboard {
-		return self::unserialize($this->clipboard);
 	}
 }
