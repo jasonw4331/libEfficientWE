@@ -45,14 +45,6 @@ class Cuboid extends Shape {
 		return new self(new Vector3($minX, $minY, $minZ), new Vector3($maxX, $maxY, $maxZ));
 	}
 
-	public function asyncCut(ChunkManager $level, Vector3 $relative_pos, ?callable $callable = null) : void {
-		// TODO: Implement asyncCut() method.
-	}
-
-	public function syncCut(ChunkManager $level, Vector3 $relative_pos, ?callable $callable = null) : void {
-		// TODO: Implement syncCut() method.
-	}
-
 	public function syncCopy(ChunkManager $level, Vector3 $relative_pos, ?callable $callable = null) : void {
 		$time = microtime(true);
 

@@ -4,6 +4,7 @@ namespace libEfficientWE\shapes;
 
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
+use pocketmine\block\BlockIds;
 use pocketmine\level\ChunkManager;
 use pocketmine\level\format\Chunk;
 use pocketmine\level\Level;
@@ -31,9 +32,17 @@ abstract class Shape {
 		return $this;
 	}
 
-	abstract public function asyncCut(ChunkManager $level, Vector3 $relative_pos, ?callable $callable = null) : void;
+	public function asyncCut(Level $level, Vector3 $relative_pos, ?callable $callable = null) : void {
+		// TODO: fix callback
+		$this->syncCopy($level, $relative_pos);
+		$this->asyncSet($level, Block::get(BlockIds::AIR), $callable);
+	}
 
-	abstract public function syncCut(ChunkManager $level, Vector3 $relative_pos, ?callable $callable = null) : void;
+	public function syncCut(ChunkManager $level, Vector3 $relative_pos, ?callable $callable = null) : void {
+		// TODO: fix callback
+		$this->syncCopy($level, $relative_pos);
+		$this->syncSet($level, Block::get(BlockIds::AIR), $callable);
+	}
 
 	abstract public function syncCopy(ChunkManager $level, Vector3 $relative_pos, ?callable $callable = null) : void;
 
