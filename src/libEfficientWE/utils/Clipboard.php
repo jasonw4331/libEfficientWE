@@ -6,14 +6,9 @@ use pocketmine\math\Vector3;
 
 class Clipboard {
 
-	/** @var int[]|null */
-	private $fullBlocks;
-
-	/** @var Vector3|null */
-	private $relativePos;
-
-	/** @var Vector3|null */
-	private $capVector;
+	private ?array $fullBlocks;
+	private ?Vector3 $relativePos;
+	private ?Vector3 $capVector;
 
 	/**
 	 * @return int[]|null
