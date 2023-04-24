@@ -31,15 +31,15 @@ class AsyncCuboidTask extends AsyncChunksChangeTask {
 
 		// use clipboard block ids to set blocks in cuboid pattern
 
-		$relativePos = $clipboard->getRelativePos()?->addVector($relativePos);
-		$relx = $relativePos?->getFloorX() ?? throw new AssumptionFailedError("Relative position is null");
-		$rely = $relativePos->getFloorY();
-		$relz = $relativePos->getFloorZ();
+		$relativePos = $clipboard->getRelativePos()->addVector($relativePos);
+		$relx = $relativePos->x;
+		$rely = $relativePos->y;
+		$relz = $relativePos->z;
 
 		$caps = $clipboard->getCapVector();
-		$xCap = $caps?->getFloorX() ?? throw new AssumptionFailedError("Caps vector is null");
-		$yCap = $caps->getFloorY();
-		$zCap = $caps->getFloorZ();
+		$xCap = $caps->x;
+		$yCap = $caps->y;
+		$zCap = $caps->z;
 
 		$iterator = new SubChunkExplorer($manager);
 
