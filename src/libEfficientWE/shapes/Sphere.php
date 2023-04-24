@@ -4,25 +4,37 @@ declare(strict_types=1);
 namespace libEfficientWE\shapes;
 
 use libEfficientWE\task\AsyncSphereTask;
-use libEfficientWE\utils\BlockIterator;
-use libEfficientWE\utils\Clipboard;
-use libEfficientWE\utils\Utils;
 use pocketmine\block\Block;
-use pocketmine\level\ChunkManager;
-use pocketmine\level\Level;
 use pocketmine\math\AxisAlignedBB;
-use pocketmine\math\Vector2;
 use pocketmine\math\Vector3;
+use pocketmine\promise\Promise;
+use pocketmine\promise\PromiseResolver;
+use pocketmine\world\format\Chunk;
+use pocketmine\world\format\SubChunk;
+use pocketmine\world\utils\SubChunkExplorer;
+use pocketmine\world\utils\SubChunkExplorerStatus;
+use pocketmine\world\World;
 
+/**
+ * @phpstan-import-type BlockPosHash from World
+ */
 class Sphere extends Shape {
 
 	protected Vector3 $relativeCenter;
 	protected int $radius;
 
-	private function __construct(Vector3 $relativeCenter, int $radius, ?Clipboard $clipboard = null) {
+	private function __construct(Vector3 $relativeCenter, int $radius) {
 		$this->relativeCenter = $relativeCenter;
 		$this->radius = abs($radius);
-		parent::__construct($clipboard);
+		parent::__construct(null);
+	}
+
+	public function getRelativeCenter() : Vector3{
+		return $this->relativeCenter;
+	}
+
+	public function getRadius() : int {
+		return $this->radius;
 	}
 
 	public static function fromVector3(Vector3 $min, Vector3 $max) : Shape {
@@ -51,10 +63,8 @@ class Sphere extends Shape {
 		return new self($center, $radius);
 	}
 
-	public function syncCopy(ChunkManager $level, Vector3 $worldBasePos, ?callable $callable = null) : void {
-		$time = microtime(true);
-
-		$absoluteBasePos = $this->relativeCenter->subtract($worldBasePos->floor());
+	public function copy(World $world, Vector3 $relativeCenter) : void{
+		$absoluteBasePos = $this->relativeCenter->subtractVector($relativeCenter->floor());
 
 		$relativeMaximums = $this->relativeCenter->add($this->radius, $this->radius, $this->radius);
 		$xCap = $relativeMaximums->x;
@@ -66,232 +76,65 @@ class Sphere extends Shape {
 		$minY = $relativeMinimums->y;
 		$minZ = $relativeMinimums->z;
 
+		/** @var array<BlockPosHash, int|null> $blocks */
 		$blocks = [];
-		$iterator = new BlockIterator($level);
+		$subChunkExplorer = new SubChunkExplorer($world);
 
+		// loop from min to max if coordinate is in cylinder, save fullblockId
 		for($x = 0; $x <= $xCap; ++$x) {
 			$ax = $minX + $x;
 			for($z = 0; $z <= $zCap; ++$z) {
 				$az = $minZ + $z;
 				for($y = 0; $y <= $yCap; ++$y) {
 					$ay = $minY + $y;
-					$iterator->moveTo($ax, $ay, $az);
-					if($this->relativeCenter->distance(new Vector3($x, $y, $z)) > $this->radius) {
-						continue;
+					if($this->relativeCenter->distance(new Vector3($x, $y, $z)) <= $this->radius && $subChunkExplorer->moveTo((int) $ax, (int) $ay, (int) $az) !== SubChunkExplorerStatus::INVALID) {
+						$blocks[World::blockHash($ax, $ay, $az)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
-					$blocks[Level::blockHash($x, $y, $z)] = $iterator->currentSubChunk->getFullBlock($ax & 0x0f, $ay & 0x0f, $az & 0x0f);
 				}
 			}
 		}
 
 		$this->clipboard->setFullBlocks($blocks)->setRelativePos($absoluteBasePos)->setCapVector($relativeMaximums);
-
-		$time = microtime(true) - $time;
-		if($callable !== null) {
-			$callable($time, ($xCap + 1) * ($yCap + 1) * ($zCap + 1)); // TODO: update for better accuracy
-		}
 	}
 
-	public function asyncPaste(Level $level, Vector3 $relative_pos, bool $replace_air = true, ?callable $callable = null) : void {
-		$chunks = [];
-
-		$caps = $this->clipboard->getCapVector();
-		$minChunkX = $relative_pos->x >> 4;
-		$minChunkZ = $relative_pos->z >> 4;
-		$maxChunkX = ($relative_pos->x + $caps->x) >> 4;
-		$maxChunkZ = ($relative_pos->z + $caps->z) >> 4;
-
-		for($chunkX = $minChunkX; $chunkX <= $maxChunkX; ++$chunkX) {
-			for($chunkZ = $minChunkZ; $chunkZ <= $maxChunkZ; ++$chunkZ) {
-				$chunks[] = $level->getChunk($chunkX, $chunkZ, true);
-			}
-		}
-
-		$task = new AsyncSphereTask($this, $level, $chunks, AsyncSphereTask::PASTE, $callable);
-		$task->setRelativePos($relative_pos);
-		$task->replaceAir($replace_air);
-		$level->getServer()->getAsyncPool()->submitTask($task);
-	}
-
-	public function syncPaste(ChunkManager $level, Vector3 $worldBasePos, bool $replace_air = true, ?callable $callable = null) : void {
-		$changed = 0;
+	public function paste(World $world, Vector3 $relativeCenter, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
+		$resolver ??= new PromiseResolver();
 
-		$clipboard = $this->clipboard;
+		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
 
-		$relativeMaximums = $clipboard->getCapVector();
-		$xCap = $relativeMaximums->x;
-		$yCap = $relativeMaximums->y;
-		$zCap = $relativeMaximums->z;
-
-		$absoluteBasePos = $worldBasePos->floor()->add($clipboard->getRelativePos());
-		$minX = $absoluteBasePos->x;
-		$minY = $absoluteBasePos->y;
-		$minZ = $absoluteBasePos->z;
-
-		$iterator = new BlockIterator($level);
-
-		for($x = 0; $x <= $xCap; ++$x) {
-			$ax = $minX + $x;
-			for($z = 0; $z <= $zCap; ++$z) {
-				$az = $minZ + $z;
-				for($y = 0; $y <= $yCap; ++$y) {
-					$fullBlock = $clipboard->getFullBlocks()[Level::blockHash($x, $y, $z)] ?? null;
-					if($fullBlock !== null) {
-						if($replace_air || ($fullBlock >> 4) !== Block::AIR) {
-							$ay = $minY + $y;
-							$iterator->moveTo($ax, $ay, $az);
-							// if($absoluteBasePos->distance(new Vector3($x, $y, $z)) > $this->radius)
-							// 	continue;
-							$iterator->currentSubChunk->setBlock($ax & 0x0f, $ay & 0x0f, $az & 0x0f, $fullBlock >> 4, $fullBlock & 0xf);
-							++$changed;
-						}
-					}
+		$world->getServer()->getAsyncPool()->submitTask(new AsyncSphereTask(
+			$world->getId(),
+			$chunkX,
+			$chunkZ,
+			$centerChunk,
+			$adjacentChunks,
+			$this->clipboard,
+			$relativeCenter,
+			$this->radius,
+			true,
+			$replaceAir,
+			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+					$resolver->reject();
+					return;
 				}
+
+				$resolver->resolve([
+					'chunks' => [$centerChunk] + $adjacentChunks,
+					'time' => microtime(true) - $time,
+					'blockCount' => $changedBlocks,
+				]);
 			}
-		}
-
-		if($level instanceof Level) {
-			Utils::updateChunks($level, $minX >> 4, ($minX + $xCap) >> 4, $minZ >> 4, ($minZ + $zCap) >> 4);
-		}
-
-		$time = microtime(true) - $time;
-		if($callable !== null) {
-			$callable($time, $changed);
-		}
+		));
+		return $resolver->getPromise();
 	}
 
-	public function asyncSet(Level $level, Block $block, ?callable $callable = null) : void {
-		$task = new AsyncSphereTask($this, $level, $this->getChunks($level), AsyncSphereTask::SET, $callable);
-		$task->setBlock($block);
-		$level->getServer()->getAsyncPool()->submitTask($task);
+	public function set(World $world, Block $block, bool $fill, ?PromiseResolver $resolver = null) : Promise{
+		// TODO: Implement set() method.
 	}
 
-	public function syncSet(ChunkManager $level, Block $block, ?callable $callable = null) : void {
-		$time = microtime(true);
-
-		$relativeMaximums = $this->relativeCenter->add($this->radius, $this->radius, $this->radius);
-		$maxX = $relativeMaximums->x;
-		$maxY = $relativeMaximums->y;
-		$maxZ = $relativeMaximums->z;
-
-		$relativeMinimums = $this->relativeCenter->subtract($this->radius, $this->radius, $this->radius);
-		$minX = $relativeMinimums->x;
-		$minY = $relativeMinimums->y;
-		$minZ = $relativeMinimums->z;
-
-		$blockId = $block->getId();
-		$blockMeta = $block->getDamage();
-
-		$iterator = new BlockIterator($level);
-
-		for($x = $minX; $x <= $maxX; ++$x) {
-			for($z = $minZ; $z <= $maxZ; ++$z) {
-				for($y = $minY; $y <= $maxY; ++$y) {
-					$iterator->moveTo($x, $y, $z);
-					if($this->relativeCenter->distance(new Vector3($x, $y, $z)) > $this->radius) {
-						continue;
-					}
-					$iterator->currentSubChunk->setBlock($x & 0x0f, $y & 0x0f, $z & 0x0f, $blockId, $blockMeta);
-				}
-			}
-		}
-
-		if($level instanceof Level) {
-			Utils::updateChunks($level, $minX >> 4, $maxX >> 4, $minZ >> 4, $maxZ >> 4);
-		}
-
-		$time = microtime(true) - $time;
-		if($callable !== null) {
-			$callable($time, (1 + $maxX - $minX) * (1 + $maxY - $minY) * (1 + $maxZ - $minZ));
-		}
-	}
-
-	public function asyncReplace(Level $level, Block $find, Block $replace, ?callable $callable = null) : void {
-		$task = new AsyncSphereTask($this, $level, $this->getChunks($level), AsyncSphereTask::REPLACE, $callable);
-		$task->find($find);
-		$task->replace($replace);
-		$level->getServer()->getAsyncPool()->submitTask($task);
-	}
-
-	public function syncReplace(ChunkManager $level, Block $find, Block $replace, ?callable $callable = null) : void {
-		$time = microtime(true);
-
-		$relativeMaximums = $this->relativeCenter->add($this->radius, $this->radius, $this->radius);
-		$maxX = $relativeMaximums->x;
-		$maxY = $relativeMaximums->y;
-		$maxZ = $relativeMaximums->z;
-
-		$relativeMinimums = $this->relativeCenter->subtract($this->radius, $this->radius, $this->radius);
-		$minX = $relativeMinimums->x;
-		$minY = $relativeMinimums->y;
-		$minZ = $relativeMinimums->z;
-
-		$find = ($find->getId() << 4) | $find->getDamage(); //fullBlock
-
-		$replaceId = $replace->getId();
-		$replaceMeta = $replace->getDamage();
-
-		$iterator = new BlockIterator($level);
-
-		for($x = $minX; $x <= $maxX; ++$x) {
-			for($z = $minZ; $z <= $maxZ; ++$z) {
-				for($y = $minY; $y <= $maxY; ++$y) {
-					$iterator->moveTo($x, $y, $z);
-					if((new Vector2($this->relativeCenter->x, $this->relativeCenter->z))->distance(new Vector2($x, $z)) > $this->radius) {
-						continue;
-					}
-					if($iterator->currentSubChunk->getFullBlock($x & 0x0f, $y & 0x0f, $z & 0x0f) === $find) {
-						$iterator->currentSubChunk->setBlock($x & 0x0f, $y & 0x0f, $z & 0x0f, $replaceId, $replaceMeta);
-					}
-				}
-			}
-		}
-
-		if($level instanceof Level) {
-			Utils::updateChunks($level, $minX >> 4, $maxX >> 4, $minZ >> 4, $maxZ >> 4);
-		}
-
-		$time = microtime(true) - $time;
-		if($callable !== null) {
-			$callable($time, (1 + $maxX - $minX) * (1 + $maxY - $minY) * (1 + $maxZ - $minZ));
-		}
-	}
-
-	public function asyncRotate(Level $level, int $direction, ?callable $callable = null) : void {
-		// TODO: Implement asyncRotate() method.
-	}
-
-	public function syncRotate(ChunkManager $level, int $direction, ?callable $callable = null) : void {
-		// TODO: Implement syncRotate() method.
-	}
-
-	protected function getChunks(ChunkManager $level) : array {
-		$chunks = [];
-
-		$relativeMaximums = $this->relativeCenter->add($this->radius, $this->radius, $this->radius);
-		$xCap = $relativeMaximums->x;
-		$zCap = $relativeMaximums->z;
-
-		$relativeMinimums = $this->relativeCenter->subtract($this->radius, 0, $this->radius);
-		$minX = $relativeMinimums->x;
-		$minZ = $relativeMinimums->z;
-
-		$minChunkX = $minX >> 4;
-		$maxChunkX = $xCap >> 4;
-		$minChunkZ = $minZ >> 4;
-		$maxChunkZ = $zCap >> 4;
-
-		for($chunkX = $minChunkX; $chunkX <= $maxChunkX; ++$chunkX) {
-			for($chunkZ = $minChunkZ; $chunkZ <= $maxChunkZ; ++$chunkZ) {
-				$chunks[] = $level->getChunk($chunkX, $chunkZ);
-			}
-		}
-
-		return $chunks;
-	}
-
-	public function getRadius() : int {
-		return $this->radius;
+	public function replace(World $world, Block $find, Block $replace, ?PromiseResolver $resolver = null) : Promise{
+		// TODO: Implement replace() method.
 	}
 }
