@@ -684,152 +684,152 @@ $ignoreErrors[] = [
 $ignoreErrors[] = [
 	'message' => '#^Method libEfficientWE\\\\task\\\\AsyncCuboidTask\\:\\:__construct\\(\\) has parameter \\$chunks with no value type specified in iterable type array\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCuboidTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CuboidTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Method libEfficientWE\\\\task\\\\AsyncCuboidTask\\:\\:getCuboid\\(\\) should return libEfficientWE\\\\shapes\\\\Cuboid but returns mixed\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCuboidTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CuboidTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Method pocketmine\\\\math\\\\Vector3\\:\\:add\\(\\) invoked with 1 parameter, 3 required\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCuboidTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CuboidTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$level of method libEfficientWE\\\\shapes\\\\Cuboid\\:\\:syncPaste\\(\\) expects pocketmine\\\\level\\\\ChunkManager, pocketmine\\\\level\\\\SimpleChunkManager given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCuboidTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CuboidTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$level of method libEfficientWE\\\\shapes\\\\Cuboid\\:\\:syncReplace\\(\\) expects pocketmine\\\\level\\\\ChunkManager, pocketmine\\\\level\\\\SimpleChunkManager given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCuboidTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CuboidTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$level of method libEfficientWE\\\\shapes\\\\Cuboid\\:\\:syncSet\\(\\) expects pocketmine\\\\level\\\\ChunkManager, pocketmine\\\\level\\\\SimpleChunkManager given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCuboidTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CuboidTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$x of method pocketmine\\\\math\\\\Vector3\\:\\:add\\(\\) expects float\\|int, pocketmine\\\\math\\\\Vector3\\|null given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCuboidTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CuboidTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\$level of method libEfficientWE\\\\task\\\\AsyncCuboidTask\\:\\:__construct\\(\\) has invalid type pocketmine\\\\level\\\\Level\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCuboidTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CuboidTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Call to an undefined method libEfficientWE\\\\shapes\\\\Cylinder\\:\\:getHighCorner\\(\\)\\.$#',
 	'count' => 2,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Call to an undefined method libEfficientWE\\\\shapes\\\\Cylinder\\:\\:getLowCorner\\(\\)\\.$#',
 	'count' => 2,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Method libEfficientWE\\\\task\\\\AsyncCylinderTask\\:\\:__construct\\(\\) has parameter \\$chunks with no value type specified in iterable type array\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Method libEfficientWE\\\\task\\\\AsyncCylinderTask\\:\\:getCylinder\\(\\) should return libEfficientWE\\\\shapes\\\\Cylinder but returns mixed\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Method libEfficientWE\\\\task\\\\AsyncCylinderTask\\:\\:onRun\\(\\) has no return type specified\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Method pocketmine\\\\math\\\\Vector3\\:\\:add\\(\\) invoked with 1 parameter, 3 required\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$level of method libEfficientWE\\\\shapes\\\\Cylinder\\:\\:syncPaste\\(\\) expects pocketmine\\\\level\\\\ChunkManager, pocketmine\\\\level\\\\SimpleChunkManager given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$level of method libEfficientWE\\\\shapes\\\\Cylinder\\:\\:syncReplace\\(\\) expects pocketmine\\\\level\\\\ChunkManager, pocketmine\\\\level\\\\SimpleChunkManager given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$level of method libEfficientWE\\\\shapes\\\\Cylinder\\:\\:syncSet\\(\\) expects pocketmine\\\\level\\\\ChunkManager, pocketmine\\\\level\\\\SimpleChunkManager given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$x of method pocketmine\\\\math\\\\Vector3\\:\\:add\\(\\) expects float\\|int, pocketmine\\\\math\\\\Vector3\\|null given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\$level of method libEfficientWE\\\\task\\\\AsyncCylinderTask\\:\\:__construct\\(\\) has invalid type pocketmine\\\\level\\\\Level\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncCylinderTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/CylinderTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Call to an undefined method libEfficientWE\\\\shapes\\\\Sphere\\:\\:getHighCorner\\(\\)\\.$#',
 	'count' => 2,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Call to an undefined method libEfficientWE\\\\shapes\\\\Sphere\\:\\:getLowCorner\\(\\)\\.$#',
 	'count' => 2,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Method libEfficientWE\\\\task\\\\AsyncSphereTask\\:\\:__construct\\(\\) has parameter \\$chunks with no value type specified in iterable type array\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Method libEfficientWE\\\\task\\\\AsyncSphereTask\\:\\:getSphere\\(\\) should return libEfficientWE\\\\shapes\\\\Sphere but returns mixed\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Method libEfficientWE\\\\task\\\\AsyncSphereTask\\:\\:onRun\\(\\) has no return type specified\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Method pocketmine\\\\math\\\\Vector3\\:\\:add\\(\\) invoked with 1 parameter, 3 required\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$level of method libEfficientWE\\\\shapes\\\\Sphere\\:\\:syncPaste\\(\\) expects pocketmine\\\\level\\\\ChunkManager, pocketmine\\\\level\\\\SimpleChunkManager given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$level of method libEfficientWE\\\\shapes\\\\Sphere\\:\\:syncReplace\\(\\) expects pocketmine\\\\level\\\\ChunkManager, pocketmine\\\\level\\\\SimpleChunkManager given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$level of method libEfficientWE\\\\shapes\\\\Sphere\\:\\:syncSet\\(\\) expects pocketmine\\\\level\\\\ChunkManager, pocketmine\\\\level\\\\SimpleChunkManager given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\#1 \\$x of method pocketmine\\\\math\\\\Vector3\\:\\:add\\(\\) expects float\\|int, pocketmine\\\\math\\\\Vector3\\|null given\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Parameter \\$level of method libEfficientWE\\\\task\\\\AsyncSphereTask\\:\\:__construct\\(\\) has invalid type pocketmine\\\\level\\\\Level\\.$#',
 	'count' => 1,
-	'path' => __DIR__ . '/src/libEfficientWE/task/AsyncSphereTask.php',
+	'path' => __DIR__ . '/src/libEfficientWE/task/SphereTask.php',
 ];
 $ignoreErrors[] = [
 	'message' => '#^Access to an undefined property libEfficientWE\\\\utils\\\\BlockIterator\\:\\:\\$allocateEmptySubs\\.$#',

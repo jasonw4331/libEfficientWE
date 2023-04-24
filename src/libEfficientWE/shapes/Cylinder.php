@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
-use libEfficientWE\task\AsyncCylinderTask;
+use libEfficientWE\task\CylinderTask;
 use pocketmine\block\Block;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector2;
@@ -112,7 +112,7 @@ class Cylinder extends Shape {
 
 		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
 
-		$world->getServer()->getAsyncPool()->submitTask(new AsyncCylinderTask(
+		$world->getServer()->getAsyncPool()->submitTask(new CylinderTask(
 			$world->getId(),
 			$chunkX,
 			$chunkZ,

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 namespace libEfficientWE\shapes;
 
-use libEfficientWE\task\AsyncCuboidTask;
+use libEfficientWE\task\CuboidTask;
 use pocketmine\block\Block;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
@@ -94,7 +94,7 @@ class Cuboid extends Shape {
 
 		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
 
-		$world->getServer()->getAsyncPool()->submitTask(new AsyncCuboidTask(
+		$world->getServer()->getAsyncPool()->submitTask(new CuboidTask(
 			$world->getId(),
 			$chunkX,
 			$chunkZ,
@@ -130,7 +130,7 @@ class Cuboid extends Shape {
 		$setClipboard = clone $this->clipboard;
 		$setClipboard->setFullBlocks(array_map(static fn(?int $fullBlock) => $block->getFullId(), $setClipboard->getFullBlocks()));
 
-		$world->getServer()->getAsyncPool()->submitTask(new AsyncCuboidTask(
+		$world->getServer()->getAsyncPool()->submitTask(new CuboidTask(
 			$world->getId(),
 			$chunkX,
 			$chunkZ,
@@ -166,7 +166,7 @@ class Cuboid extends Shape {
 		$replaceClipboard = clone $this->clipboard;
 		$replaceClipboard->setFullBlocks(array_map(static fn(?int $fullBlock) => $fullBlock === $find->getFullId() ? $replace->getFullId() : $fullBlock, $replaceClipboard->getFullBlocks()));
 
-		$world->getServer()->getAsyncPool()->submitTask(new AsyncCuboidTask(
+		$world->getServer()->getAsyncPool()->submitTask(new CuboidTask(
 			$world->getId(),
 			$chunkX,
 			$chunkZ,

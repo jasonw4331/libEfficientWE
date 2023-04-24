@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
-use libEfficientWE\task\AsyncSphereTask;
+use libEfficientWE\task\SphereTask;
 use pocketmine\block\Block;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
@@ -97,20 +97,20 @@ class Sphere extends Shape {
 		$this->clipboard->setFullBlocks($blocks)->setRelativePos($absoluteBasePos)->setCapVector($relativeMaximums);
 	}
 
-	public function paste(World $world, Vector3 $relativeCenter, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
+	public function paste(World $world, Vector3 $relativePos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
 		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
 
-		$world->getServer()->getAsyncPool()->submitTask(new AsyncSphereTask(
+		$world->getServer()->getAsyncPool()->submitTask(new SphereTask(
 			$world->getId(),
 			$chunkX,
 			$chunkZ,
 			$centerChunk,
 			$adjacentChunks,
 			$this->clipboard,
-			$relativeCenter,
+			$relativePos,
 			$this->radius,
 			true,
 			$replaceAir,

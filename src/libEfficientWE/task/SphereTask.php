@@ -14,11 +14,14 @@ use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
 use pocketmine\world\World;
 
-class AsyncCylinderTask extends AsyncChunksChangeTask {
+/**
+ * @internal
+ */
+final class SphereTask extends ChunksChangeTask {
 
 	protected string $relativeCenter;
 
-	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $relativeCenter, protected float $radius, protected float $height, bool $fill, bool $replaceAir, \Closure $onCompletion){
+	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $relativeCenter, protected float $radius, bool $fill, bool $replaceAir, \Closure $onCompletion){
 		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $fill, $replaceAir, $onCompletion);
 		$this->relativeCenter = igbinary_serialize($relativeCenter) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
@@ -27,7 +30,7 @@ class AsyncCylinderTask extends AsyncChunksChangeTask {
 		/** @var Vector3 $relativeCenter */
 		$relativeCenter = igbinary_unserialize($this->relativeCenter);
 
-		// use clipboard block ids to set blocks in cylinder pattern
+		// use clipboard block ids to set blocks in spherical pattern
 
 		$relativeCenter = $clipboard->getRelativePos()->addVector($relativeCenter);
 		$relx = $relativeCenter->x;

@@ -17,10 +17,11 @@ use function igbinary_serialize;
 use function igbinary_unserialize;
 
 /**
+ * @internal
  * @phpstan-import-type ChunkPosHash from World
  * @phpstan-type OnCompletion \Closure(Chunk $centerChunk, array<int, Chunk> $adjacentChunks, int $changedBlocks) : void
  */
-abstract class AsyncChunksChangeTask extends AsyncTask {
+abstract class ChunksChangeTask extends AsyncTask {
 	private const TLS_KEY_ON_COMPLETION = "onCompletion";
 
 	protected ?string $chunk;

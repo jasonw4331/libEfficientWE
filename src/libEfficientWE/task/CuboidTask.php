@@ -16,7 +16,10 @@ use pocketmine\world\World;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 
-class AsyncCuboidTask extends AsyncChunksChangeTask {
+/**
+ * @internal
+ */
+final class CuboidTask extends ChunksChangeTask {
 
 	protected string $relativePos;
 
