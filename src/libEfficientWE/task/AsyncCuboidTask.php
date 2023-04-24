@@ -1,53 +1,71 @@
 <?php
+
 declare(strict_types=1);
 namespace libEfficientWE\task;
 
-use libEfficientWE\shapes\Cuboid;
-use pocketmine\level\Level;
+use libEfficientWE\utils\Clipboard;
+use pocketmine\block\VanillaBlocks;
+use pocketmine\math\Vector3;
+use pocketmine\utils\AssumptionFailedError;
+use pocketmine\world\format\Chunk;
+use pocketmine\world\format\SubChunk;
+use pocketmine\world\SimpleChunkManager;
+use pocketmine\world\utils\SubChunkExplorer;
+use pocketmine\world\utils\SubChunkExplorerStatus;
+use pocketmine\world\World;
+use function igbinary_serialize;
+use function igbinary_unserialize;
 
 class AsyncCuboidTask extends AsyncChunksChangeTask {
 
-	protected int $action;
-	protected bool $set_chunks = false;
-	private string $cuboid;
+	protected string $relativePos;
 
-	public function __construct(Cuboid $cuboid, Level $level, array $chunks, int $action, ?callable $callable = null) {
-		$this->cuboid = self::serialize($cuboid);
-
-		$this->setClipboard($cuboid->getClipboard());
-		$this->setLevel($level);
-		$this->setChunks($chunks);
-		$this->action = $action;
-		$this->setCallable($callable);
+	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $relativePos, bool $fill, bool $replaceAir, \Closure $onCompletion){
+		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $fill, $replaceAir, $onCompletion);
+		$this->relativePos = igbinary_serialize($relativePos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
 
-	public function onRun() : void {
-		$level = $this->getChunkManager();
-		$cuboid = $this->getCuboid();
-		$cuboid->setClipboard($this->getClipboard());
+	protected function setBlocks(SimpleChunkManager $manager, int $chunkX, int $chunkZ, Chunk $chunk, Clipboard $clipboard) : Chunk{
+		/** @var Vector3 $relativePos */
+		$relativePos = igbinary_unserialize($this->relativePos);
 
+		// use clipboard block ids to set blocks in cuboid pattern
 
-		switch($this->action) {
-			case self::PASTE:
-				$cuboid->syncPaste($level, $this->relativePos, $this->replaceAir, [$this, "updateStatistics"]);
+		$relativePos = $clipboard->getRelativePos()?->addVector($relativePos);
+		$relx = $relativePos?->getFloorX() ?? throw new AssumptionFailedError("Relative position is null");
+		$rely = $relativePos->getFloorY();
+		$relz = $relativePos->getFloorZ();
 
-				$caps = $cuboid->getClipboard()->getCapVector();
-				$minPos = $this->relativePos;
-				$maxPos = $this->relativePos->add($caps);
-				$this->saveChunks($level, $minPos, $maxPos);
-				break;
-			case self::REPLACE:
-				$cuboid->syncReplace($level, $this->find, $this->replace, [$this, "updateStatistics"]);
-				$this->saveChunks($level, $cuboid->getLowCorner(), $cuboid->getHighCorner());
-				break;
-			case self::SET:
-				$cuboid->syncSet($level, $this->block, [$this, "updateStatistics"]);
-				$this->saveChunks($level, $cuboid->getLowCorner(), $cuboid->getHighCorner());
-				break;
+		$caps = $clipboard->getCapVector();
+		$xCap = $caps?->getFloorX() ?? throw new AssumptionFailedError("Caps vector is null");
+		$yCap = $caps->getFloorY();
+		$zCap = $caps->getFloorZ();
+
+		$iterator = new SubChunkExplorer($manager);
+
+		for($x = 0; $x <= $xCap; ++$x) {
+			$xPos = $relx + $x;
+			for($z = 0; $z <= $zCap; ++$z) {
+				$zPos = $relz + $z;
+				for($y = 0; $y <= $yCap; ++$y) {
+					$clipboardFullBlock = $clipboard->getFullBlocks()[World::blockHash($x, $y, $z)] ?? null;
+					if($clipboardFullBlock !== null) {
+						// if fill is false, ignore interior blocks on the clipboard
+						if($this->fill || $x === 0 || $x === $xCap || $y === 0 || $y === $yCap || $z === 0 || $z === $zCap) {
+							// if replaceAir is false, do not set blocks where the clipboard has air
+							if($this->replaceAir || $clipboardFullBlock !== VanillaBlocks::AIR()->getFullId()) {
+								$yPos = $rely + $y;
+								if($iterator->moveTo($xPos, $yPos, $zPos) !== SubChunkExplorerStatus::INVALID) {
+									$iterator->currentSubChunk?->setFullBlock($xPos & SubChunk::COORD_MASK, $yPos & SubChunk::COORD_MASK, $zPos & SubChunk::COORD_MASK, $clipboardFullBlock);
+									++$this->changedBlocks;
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-	}
 
-	protected function getCuboid() : Cuboid {
-		return self::unserialize($this->cuboid);
+		return $chunk;
 	}
 }
