@@ -36,7 +36,7 @@ class Cylinder extends Shape {
 		return $this->relativeCenter;
 	}
 
-	public function getRadius() : int {
+	public function getRadius() : float {
 		return $this->radius;
 	}
 
