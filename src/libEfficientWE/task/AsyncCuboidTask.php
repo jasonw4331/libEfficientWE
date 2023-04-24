@@ -48,13 +48,13 @@ class AsyncCuboidTask extends AsyncChunksChangeTask {
 			for($z = 0; $z <= $zCap; ++$z) {
 				$zPos = $relz + $z;
 				for($y = 0; $y <= $yCap; ++$y) {
-					$clipboardFullBlock = $clipboard->getFullBlocks()[World::blockHash($x, $y, $z)] ?? null;
+					$yPos = $rely + $y;
+					$clipboardFullBlock = $clipboard->getFullBlocks()[World::blockHash($xPos, $yPos, $zPos)] ?? null;
 					if($clipboardFullBlock !== null) {
 						// if fill is false, ignore interior blocks on the clipboard
 						if($this->fill || $x === 0 || $x === $xCap || $y === 0 || $y === $yCap || $z === 0 || $z === $zCap) {
 							// if replaceAir is false, do not set blocks where the clipboard has air
 							if($this->replaceAir || $clipboardFullBlock !== VanillaBlocks::AIR()->getFullId()) {
-								$yPos = $rely + $y;
 								if($iterator->moveTo($xPos, $yPos, $zPos) !== SubChunkExplorerStatus::INVALID) {
 									$iterator->currentSubChunk?->setFullBlock($xPos & SubChunk::COORD_MASK, $yPos & SubChunk::COORD_MASK, $zPos & SubChunk::COORD_MASK, $clipboardFullBlock);
 									++$this->changedBlocks;
