@@ -23,9 +23,9 @@
 		"friendsofphp/php-cs-fixer": "^3.11"
 	},
 	"autoload": {
-		"psr-0": {
-			"libEfficientWE\\": "src/libEfficientWE"
-		}
+		"classmap": [
+			"src/"
+		]
 	},
 	"config": {
 		"allow-plugins": {
