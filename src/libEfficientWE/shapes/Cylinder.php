@@ -112,8 +112,8 @@ class Cylinder extends Shape {
 		return new self($relativeCenterOfBase, $radius, $height, $axis);
 	}
 
-	public function copy(World $world, Vector3 $worldCenterPos) : void{
-		$absoluteBasePos = $this->centerOfBase->subtractVector($worldCenterPos->floor());
+	public function copy(World $world, Vector3 $worldPos) : void{
+		$absoluteBasePos = $this->centerOfBase->subtractVector($worldPos->floor());
 
 		$relativeMaximums = $this->centerOfBase->add($this->radius, $this->height, $this->radius);
 		$xCap = $relativeMaximums->x;
