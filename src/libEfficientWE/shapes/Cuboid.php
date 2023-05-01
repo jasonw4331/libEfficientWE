@@ -20,6 +20,8 @@ use function microtime;
 use function min;
 
 /**
+ * A representation of a cuboid shape.
+ *
  * @phpstan-import-type BlockPosHash from World
  */
 class Cuboid extends Shape {

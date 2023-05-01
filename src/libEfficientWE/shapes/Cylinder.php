@@ -21,6 +21,9 @@ use function max;
 use function min;
 
 /**
+ * A representation of a cylinder shape. The default axis is {@link Axis::Y}, making the cylinder base at its lowest coordinate, but it can be
+ * changed to {@link Axis::X} or {@link Axis::Z} to be horizontal instead.
+ *
  * @phpstan-import-type BlockPosHash from World
  */
 class Cylinder extends Shape {

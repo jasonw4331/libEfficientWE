@@ -16,6 +16,8 @@ use pocketmine\world\utils\SubChunkExplorerStatus;
 use pocketmine\world\World;
 
 /**
+ * A representation of a sphere shape.
+ *
  * @phpstan-import-type BlockPosHash from World
  */
 class Sphere extends Shape {

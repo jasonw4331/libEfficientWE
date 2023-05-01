@@ -3,6 +3,7 @@
 declare(strict_types=1);
 namespace libEfficientWE\shapes;
 
+use libEfficientWE\task\ChunksChangeTask;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\block\VanillaBlocks;
@@ -21,6 +22,9 @@ use function microtime;
 use function sin;
 
 /**
+ * An abstract class for polygonal shapes to interact with the world using {@link ChunksChangeTask} classes.
+ *
+ * @internal
  * @phpstan-import-type ChunkPosHash from World
  * @phpstan-type promiseReturn array{"chunks": Chunk[], "time": float, "blockCount": int}
  */
