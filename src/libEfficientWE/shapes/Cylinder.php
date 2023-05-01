@@ -6,11 +6,13 @@ namespace libEfficientWE\shapes;
 
 use libEfficientWE\task\CylinderTask;
 use pocketmine\block\Block;
+use pocketmine\math\Axis;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector2;
 use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
+use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\format\SubChunk;
 use pocketmine\world\utils\SubChunkExplorer;
@@ -18,6 +20,7 @@ use pocketmine\world\utils\SubChunkExplorerStatus;
 use pocketmine\world\World;
 use function abs;
 use function max;
+use function microtime;
 use function min;
 
 /**
@@ -47,43 +50,77 @@ class Cylinder extends Shape {
 		return $this->height;
 	}
 
-	public static function fromVector3(Vector3 $min, Vector3 $max) : Shape {
-		$minX = (int) min($min->x, $max->x);
-		$minY = (int) min($min->y, $max->y);
-		$minZ = (int) min($min->z, $max->z);
-		$maxX = (int) max($min->x, $max->x);
-		$maxY = (int) max($min->y, $max->y);
-		$maxZ = (int) max($min->z, $max->z);
-
-		$center = new Vector3(($maxX + $minX) / 2, ($maxY + $minY) / 2, ($maxZ + $minZ) / 2);
-		$radius = ($maxX - $minX) / 2;
-		$height = ($maxY - $minY);
-		return new self($center, $radius, $height);
+	public function getAxis() : int{
+		return $this->axis;
 	}
 
-	public static function fromAABB(AxisAlignedBB $alignedBB) : Shape {
+	public static function fromVector3(Vector3 $min, Vector3 $max, int $axis = Axis::Y) : Shape {
+		$minX = min($min->x, $max->x);
+		$minY = min($min->y, $max->y);
+		$minZ = min($min->z, $max->z);
+		$maxX = max($min->x, $max->x);
+		$maxY = max($min->y, $max->y);
+		$maxZ = max($min->z, $max->z);
+		if($axis !== Axis::X && $axis !== Axis::Y && $axis !== Axis::Z) {
+			throw new \InvalidArgumentException("Axis must be one of Axis::X, Axis::Y or Axis::Z");
+		}
+
+		$relativeCenterOfBase = (match($axis) {
+			Axis::Y => new Vector3($minX + $maxX / 2, $minY, $minZ + $maxZ / 2),
+			Axis::X => new Vector3($minX, $minY + $maxY / 2, $minZ + $maxZ / 2),
+			Axis::Z => new Vector3($minX + $maxX / 2, $minY + $maxY / 2, $minZ)
+		})->subtract($minX, $minY, $minZ);
+		$radius = match($axis) {
+			Axis::Y => min($maxX - $minX, $maxZ - $minZ) / 2,
+			Axis::X => min($maxY - $minY, $maxZ - $minZ) / 2,
+			Axis::Z => min($maxX - $minX, $maxY - $minY) / 2
+		};
+		$height = match($axis) {
+			Axis::Y => $maxY - $minY,
+			Axis::X => $maxX - $minX,
+			Axis::Z => $maxZ - $minZ
+		};
+		return new self($relativeCenterOfBase, $radius, $height, $axis);
+	}
+
+	public static function fromAABB(AxisAlignedBB $alignedBB, int $axis = Axis::Y) : Shape {
 		$minX = (int) min($alignedBB->minX, $alignedBB->maxX);
 		$minY = (int) min($alignedBB->minY, $alignedBB->maxY);
 		$minZ = (int) min($alignedBB->minZ, $alignedBB->maxZ);
 		$maxX = (int) max($alignedBB->minX, $alignedBB->maxX);
 		$maxY = (int) max($alignedBB->minY, $alignedBB->maxY);
 		$maxZ = (int) max($alignedBB->minZ, $alignedBB->maxZ);
+		if($axis !== Axis::X && $axis !== Axis::Y && $axis !== Axis::Z) {
+			throw new \InvalidArgumentException("Axis must be one of Axis::X, Axis::Y or Axis::Z");
+		}
 
-		$center = new Vector3(($maxX + $minX) / 2, ($maxY + $minY) / 2, ($maxZ + $minZ) / 2);
-		$radius = ($maxX - $minX) / 2;
-		$height = ($maxY - $minY);
-		return new self($center, $radius, $height);
+		$relativeCenterOfBase = (match($axis) {
+			Axis::Y => new Vector3($minX + $maxX / 2, $minY, $minZ + $maxZ / 2),
+			Axis::X => new Vector3($minX, $minY + $maxY / 2, $minZ + $maxZ / 2),
+			Axis::Z => new Vector3($minX + $maxX / 2, $minY + $maxY / 2, $minZ)
+		})->subtract($minX, $minY, $minZ);
+		$radius = match($axis) {
+			Axis::Y => min($maxX - $minX, $maxZ - $minZ) / 2,
+			Axis::X => min($maxY - $minY, $maxZ - $minZ) / 2,
+			Axis::Z => min($maxX - $minX, $maxY - $minY) / 2
+		};
+		$height = match($axis) {
+			Axis::Y => $maxY - $minY,
+			Axis::X => $maxX - $minX,
+			Axis::Z => $maxZ - $minZ
+		};
+		return new self($relativeCenterOfBase, $radius, $height, $axis);
 	}
 
-	public function copy(World $world, Vector3 $relativeCenter) : void{
-		$absoluteBasePos = $this->relativeCenter->subtractVector($relativeCenter->floor());
+	public function copy(World $world, Vector3 $worldCenterPos) : void{
+		$absoluteBasePos = $this->centerOfBase->subtractVector($worldCenterPos->floor());
 
-		$relativeMaximums = $this->relativeCenter->add($this->radius, $this->height, $this->radius);
+		$relativeMaximums = $this->centerOfBase->add($this->radius, $this->height, $this->radius);
 		$xCap = $relativeMaximums->x;
 		$yCap = $relativeMaximums->y;
 		$zCap = $relativeMaximums->z;
 
-		$relativeMinimums = $this->relativeCenter->subtract($this->radius, 0, $this->radius);
+		$relativeMinimums = $this->centerOfBase->subtract($this->radius, 0, $this->radius);
 		$minX = $relativeMinimums->x;
 		$minY = $relativeMinimums->y;
 		$minZ = $relativeMinimums->z;
@@ -94,12 +131,19 @@ class Cylinder extends Shape {
 
 		// loop from min to max if coordinate is in cylinder, save fullblockId
 		for($x = 0; $x <= $xCap; ++$x) {
-			$ax = $minX + $x;
+			$ax = (int) floor($minX + $x);
 			for($z = 0; $z <= $zCap; ++$z) {
-				$az = $minZ + $z;
+				$az = (int) floor($minZ + $z);
 				for($y = 0; $y <= $yCap; ++$y) {
-					$ay = $minY + $y;
-					if((new Vector2($this->relativeCenter->x, $this->relativeCenter->z))->distance(new Vector2($x, $z)) <= $this->radius && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID) {
+					$ay = (int) floor($minY + $y);
+					// check if coordinate is in cylinder depending on axis
+					$inCylinder = match ($this->axis) {
+						Axis::Y => (new Vector2($this->centerOfBase->x, $this->centerOfBase->z))->distanceSquared(new Vector2($x, $z)) <= $this->radius ** 2 && $y <= $this->height,
+						Axis::X => (new Vector2($this->centerOfBase->y, $this->centerOfBase->z))->distanceSquared(new Vector2($y, $z)) <= $this->radius ** 2 && $x <= $this->height,
+						Axis::Z => (new Vector2($this->centerOfBase->x, $this->centerOfBase->y))->distanceSquared(new Vector2($x, $y)) <= $this->radius ** 2 && $z <= $this->height,
+						default => throw new AssumptionFailedError("Invalid axis $this->axis")
+					};
+					if($inCylinder && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID) {
 						$blocks[World::blockHash($ax, $ay, $az)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
 				}
@@ -109,7 +153,7 @@ class Cylinder extends Shape {
 		$this->clipboard->setFullBlocks($blocks)->setRelativePos($absoluteBasePos)->setCapVector($relativeMaximums);
 	}
 
-	public function paste(World $world, Vector3 $relativeCenter, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
+	public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -122,7 +166,7 @@ class Cylinder extends Shape {
 			$centerChunk,
 			$adjacentChunks,
 			$this->clipboard,
-			$relativeCenter,
+			$worldPos,
 			$this->radius,
 			$this->height,
 			true,
