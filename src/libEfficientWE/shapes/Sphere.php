@@ -72,37 +72,38 @@ class Sphere extends Shape{
 	}
 
 	public function copy(World $world, Vector3 $worldPos) : void{
-		$absoluteBasePos = $this->center->subtractVector($worldPos->floor());
+		$worldCenter = $this->center->subtractVector($worldPos);
 
-		$relativeMaximums = $this->center->add($this->radius, $this->radius, $this->radius);
-		$xCap = $relativeMaximums->x;
-		$yCap = $relativeMaximums->y;
-		$zCap = $relativeMaximums->z;
+		$maxVector = $this->center->add($this->radius, $this->radius, $this->radius);
+		$minVector = $this->center->subtract($this->radius, $this->radius, $this->radius);
 
-		$relativeMinimums = $this->center->subtract($this->radius, $this->radius, $this->radius);
-		$minX = $relativeMinimums->x;
-		$minY = $relativeMinimums->y;
-		$minZ = $relativeMinimums->z;
+		$maxX = $maxVector->x;
+		$maxY = $maxVector->y;
+		$maxZ = $maxVector->z;
+
+		$minX = $minVector->x;
+		$minY = $minVector->y;
+		$minZ = $minVector->z;
 
 		/** @var array<BlockPosHash, int|null> $blocks */
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($world);
 
-		// loop from min to max if coordinate is in cylinder, save fullblockId
-		for($x = 0; $x <= $xCap; ++$x){
+		// loop from 0 to max. if coordinate is in sphere, save fullblockId
+		for($x = 0; $x <= $maxX; ++$x){
 			$ax = (int) floor($minX + $x);
-			for($z = 0; $z <= $zCap; ++$z){
+			for($z = 0; $z <= $maxZ; ++$z){
 				$az = (int) floor($minZ + $z);
-				for($y = 0; $y <= $yCap; ++$y){
+				for($y = 0; $y <= $maxY; ++$y){
 					$ay = (int) floor($minY + $y);
-					if($this->center->distance(new Vector3($x, $y, $z)) <= $this->radius && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
+					if($this->center->distanceSquared(new Vector3($x, $y, $z)) <= $this->radius ** 2 && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
 				}
 			}
 		}
 
-		$this->clipboard->setFullBlocks($blocks)->setRelativePos($absoluteBasePos)->setCapVector($relativeMaximums);
+		$this->clipboard->setFullBlocks($blocks)->setWorldVector($worldCenter)->setWorldMax($maxVector);
 	}
 
 	public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
@@ -120,6 +121,7 @@ class Sphere extends Shape{
 			$this->clipboard,
 			$worldPos,
 			$this->radius,
+			$this->center,
 			true,
 			$replaceAir,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
@@ -155,8 +157,9 @@ class Sphere extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$setClipboard,
-			$setClipboard->getRelativePos(),
+			$setClipboard->getWorldVector(),
 			$this->radius,
+			$this->center,
 			$fill,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
@@ -192,8 +195,9 @@ class Sphere extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$replaceClipboard,
-			$replaceClipboard->getRelativePos(),
+			$replaceClipboard->getWorldVector(),
 			$this->radius,
+			$this->center,
 			true,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{

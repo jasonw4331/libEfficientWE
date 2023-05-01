@@ -17,18 +17,19 @@ use function floor;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 use function morton3d_decode;
-use function sqrt;
 
 /**
  * @internal
  */
 final class SphereTask extends ChunksChangeTask{
 
-	private string $relativeCenter;
+	private string $worldPos;
+	private string $center;
 
-	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $relativeCenter, protected float $radius, bool $fill, bool $replaceAir, \Closure $onCompletion){
+	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $worldPos, protected float $radius, Vector3 $center, bool $fill, bool $replaceAir, \Closure $onCompletion){
 		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $fill, $replaceAir, $onCompletion);
-		$this->relativeCenter = igbinary_serialize($relativeCenter) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
+		$this->worldPos = igbinary_serialize($worldPos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
+		$this->center = igbinary_serialize($center) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
 
 	/**
@@ -36,28 +37,30 @@ final class SphereTask extends ChunksChangeTask{
 	 * already contains the blocks to be set in the chunk, indexed by their Morton code in {@link Sphere::copy()}
 	 */
 	protected function setBlocks(SimpleChunkManager $manager, int $chunkX, int $chunkZ, Chunk $chunk, Clipboard $clipboard) : Chunk{
-		/** @var Vector3 $relativeCenter */
-		$relativeCenter = igbinary_unserialize($this->relativeCenter);
+		/** @var Vector3 $worldPos */
+		$worldPos = igbinary_unserialize($this->worldPos);
+		/** @var Vector3 $center */
+		$center = igbinary_unserialize($this->center);
 
-		$relativeCenter = $clipboard->getRelativePos()->addVector($relativeCenter);
-		$relx = $relativeCenter->x;
-		$rely = $relativeCenter->y;
-		$relz = $relativeCenter->z;
+		$worldCenter = $center->addVector($worldPos);
+		$minX = $worldCenter->x - $this->radius;
+		$minY = $worldCenter->y - $this->radius;
+		$minZ = $worldCenter->z - $this->radius;
 
 		$iterator = new SubChunkExplorer($manager);
 
 		foreach($clipboard->getFullBlocks() as $mortonCode => $fullBlockId){
 			[$x, $y, $z] = morton3d_decode($mortonCode);
-			$ax = (int) floor($relx + $x);
-			$ay = (int) floor($rely + $y);
-			$az = (int) floor($relz + $z);
+			$ax = (int) floor($minX + $x);
+			$ay = (int) floor($minY + $y);
+			$az = (int) floor($minZ + $z);
 			if($fullBlockId !== null){
 				// make sure the chunk/block exists on this thread
 				if($iterator->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 					// if replaceAir is false, do not set blocks where the clipboard has air
 					if($this->replaceAir || $fullBlockId !== VanillaBlocks::AIR()->getFullId()){
 						// if fill is false, ignore interior blocks on the clipboard in spherical pattern
-						if($this->fill || sqrt($x * $x + $y * $y + $z * $z) === $this->radius){
+						if($this->fill || $x * $x + $y * $y + $z * $z === $this->radius ** 2){
 							$iterator->currentSubChunk?->setFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK, $fullBlockId);
 							++$this->changedBlocks;
 						}

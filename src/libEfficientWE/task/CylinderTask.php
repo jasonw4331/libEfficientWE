@@ -26,11 +26,13 @@ use function morton3d_decode;
  */
 final class CylinderTask extends ChunksChangeTask{
 
-	protected string $relativeCenter;
+	protected string $worldPos;
+	protected string $centerOfBase;
 
-	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $worldPos, protected float $radius, protected float $height, protected int $axis, bool $fill, bool $replaceAir, \Closure $onCompletion){
+	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $worldPos, protected float $radius, protected float $height, Vector3 $centerOfBase, protected int $axis, bool $fill, bool $replaceAir, \Closure $onCompletion){
 		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $fill, $replaceAir, $onCompletion);
-		$this->relativeCenter = igbinary_serialize($worldPos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
+		$this->worldPos = igbinary_serialize($worldPos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
+		$this->centerOfBase = igbinary_serialize($centerOfBase) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
 
 	/**
@@ -38,21 +40,30 @@ final class CylinderTask extends ChunksChangeTask{
 	 * already contains the blocks to be set in the chunk, indexed by their Morton code in {@link Cylinder::copy()}
 	 */
 	protected function setBlocks(SimpleChunkManager $manager, int $chunkX, int $chunkZ, Chunk $chunk, Clipboard $clipboard) : Chunk{
-		/** @var Vector3 $relativeCenter */
-		$relativeCenter = igbinary_unserialize($this->relativeCenter);
+		/** @var Vector3 $worldPos */
+		$worldPos = igbinary_unserialize($this->worldPos);
+		/** @var Vector3 $centerOfBase */
+		$centerOfBase = igbinary_unserialize($this->centerOfBase);
 
-		$relativeCenter = $clipboard->getRelativePos()->addVector($relativeCenter);
-		$relx = $relativeCenter->x;
-		$rely = $relativeCenter->y;
-		$relz = $relativeCenter->z;
+		$minVector = match($this->axis) {
+			Axis::Y => $centerOfBase->subtract($this->radius, 0, $this->radius),
+			Axis::X => $centerOfBase->subtract(0, $this->radius, $this->radius),
+			Axis::Z => $centerOfBase->subtract($this->radius, $this->radius, 0),
+			default => throw new AssumptionFailedError("Invalid axis $this->axis")
+		};
+
+		$worldPos = $minVector->addVector($worldPos);
+		$minX = $worldPos->x;
+		$minY = $worldPos->y;
+		$minZ = $worldPos->z;
 
 		$iterator = new SubChunkExplorer($manager);
 
 		foreach($clipboard->getFullBlocks() as $mortonCode => $fullBlockId){
 			[$x, $y, $z] = morton3d_decode($mortonCode);
-			$ax = (int) floor($relx + $x);
-			$ay = (int) floor($rely + $y);
-			$az = (int) floor($relz + $z);
+			$ax = (int) floor($minX + $x);
+			$ay = (int) floor($minY + $y);
+			$az = (int) floor($minZ + $z);
 			if($fullBlockId !== null){
 				// make sure the chunk/block exists on this thread
 				if($iterator->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
@@ -60,9 +71,9 @@ final class CylinderTask extends ChunksChangeTask{
 					if($this->replaceAir || $fullBlockId !== VanillaBlocks::AIR()->getFullId()){
 						// if fill is false, ignore interior blocks on the clipboard
 						$edgeOfCylinder = match ($this->axis) {
-							Axis::Y => (new Vector2($relativeCenter->x, $relativeCenter->z))->distanceSquared(new Vector2($x, $z)) == $this->radius ** 2 && $y <= $this->height,
-							Axis::X => (new Vector2($relativeCenter->y, $relativeCenter->z))->distanceSquared(new Vector2($y, $z)) == $this->radius ** 2 && $x <= $this->height,
-							Axis::Z => (new Vector2($relativeCenter->x, $relativeCenter->y))->distanceSquared(new Vector2($x, $y)) == $this->radius ** 2 && $z <= $this->height,
+							Axis::Y => (new Vector2($minX, $minZ))->distanceSquared(new Vector2($ax, $az)) >= $this->radius ** 2 && $y <= $this->height,
+							Axis::X => (new Vector2($minY, $minZ))->distanceSquared(new Vector2($ay, $az)) >= $this->radius ** 2 && $x <= $this->height,
+							Axis::Z => (new Vector2($minX, $minY))->distanceSquared(new Vector2($ax, $ay)) >= $this->radius ** 2 && $z <= $this->height,
 							default => throw new AssumptionFailedError("Invalid axis $this->axis")
 						};
 						if($this->fill || $edgeOfCylinder){

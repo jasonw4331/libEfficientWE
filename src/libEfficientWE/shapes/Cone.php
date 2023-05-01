@@ -130,17 +130,36 @@ class Cone extends Shape{
 	}
 
 	public function copy(World $world, Vector3 $worldPos) : void{
-		$absoluteBasePos = $this->centerOfBase->subtractVector($worldPos->floor());
+		$worldBaseCenter = $this->centerOfBase->addVector($worldPos);
 
-		$relativeMaximums = $this->centerOfBase->add($this->radius, $this->height, $this->radius);
-		$xCap = $relativeMaximums->x;
-		$yCap = $relativeMaximums->y;
-		$zCap = $relativeMaximums->z;
+		$maxVector = match($this->facing) {
+			Facing::UP => $this->centerOfBase->add($this->radius, $this->height, $this->radius),
+			Facing::DOWN => $this->centerOfBase->add($this->radius, 0, $this->radius),
+			Facing::SOUTH => $this->centerOfBase->add($this->radius, $this->radius, $this->height),
+			Facing::NORTH => $this->centerOfBase->add($this->radius, $this->radius, 0),
+			Facing::EAST => $this->centerOfBase->add($this->height, $this->radius, $this->radius),
+			Facing::WEST => $this->centerOfBase->add(0, $this->radius, $this->radius),
+		};
+		$minVector = match($this->facing) {
+			Facing::UP => $this->centerOfBase->subtract($this->radius, 0, $this->radius),
+			Facing::DOWN => $this->centerOfBase->subtract($this->radius, $this->height, $this->radius),
+			Facing::SOUTH => $this->centerOfBase->subtract($this->radius, $this->radius, 0),
+			Facing::NORTH => $this->centerOfBase->subtract($this->radius, $this->radius, $this->height),
+			Facing::EAST => $this->centerOfBase->subtract(0, $this->radius, $this->radius),
+			Facing::WEST => $this->centerOfBase->subtract($this->height, $this->radius, $this->radius),
+		};
 
-		$relativeMinimums = $this->centerOfBase->subtract($this->radius, 0, $this->radius);
-		$minX = $relativeMinimums->x;
-		$minY = $relativeMinimums->y;
-		$minZ = $relativeMinimums->z;
+		$maxX = $maxVector->x;
+		$maxY = $maxVector->y;
+		$maxZ = $maxVector->z;
+
+		$minX = $minVector->x;
+		$minY = $minVector->y;
+		$minZ = $minVector->z;
+
+		/** @var array<BlockPosHash, int|null> $blocks */
+		$blocks = [];
+		$subChunkExplorer = new SubChunkExplorer($world);
 
 		$coneTip = match ($this->facing) {
 			Facing::UP => $this->centerOfBase->add(0, $this->height, 0),
@@ -153,16 +172,12 @@ class Cone extends Shape{
 		};
 		$axisVector = (new Vector3(0, -$this->height, 0))->normalize();
 
-		/** @var array<BlockPosHash, int|null> $blocks */
-		$blocks = [];
-		$subChunkExplorer = new SubChunkExplorer($world);
-
-		// loop from min to max if coordinate is in cone, save fullblockId
-		for($x = 0; $x <= $xCap; ++$x){
+		// loop from 0 to max. if coordinate is in cone, save fullblockId
+		for($x = 0; $x <= $maxX; ++$x){
 			$ax = (int) floor($minX + $x);
-			for($z = 0; $z <= $zCap; ++$z){
+			for($z = 0; $z <= $maxZ; ++$z){
 				$az = (int) floor($minZ + $z);
-				for($y = 0; $y <= $yCap; ++$y){
+				for($y = 0; $y <= $maxY; ++$y){
 					$ay = (int) floor($minY + $y);
 					// check if coordinate is in cylinder depending on axis
 					$relativePoint = match ($this->facing) {
@@ -190,7 +205,7 @@ class Cone extends Shape{
 			}
 		}
 
-		$this->clipboard->setFullBlocks($blocks)->setRelativePos($absoluteBasePos)->setCapVector($relativeMaximums);
+		$this->clipboard->setFullBlocks($blocks)->setWorldVector($worldBaseCenter)->setWorldMax($maxVector);
 	}
 
 	/**
@@ -212,6 +227,7 @@ class Cone extends Shape{
 			$worldPos,
 			$this->radius,
 			$this->height,
+			$this->centerOfBase,
 			$this->facing,
 			true,
 			$replaceAir,
@@ -248,9 +264,10 @@ class Cone extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$setClipboard,
-			$setClipboard->getRelativePos(),
+			$setClipboard->getWorldVector(),
 			$this->radius,
 			$this->height,
+			$this->centerOfBase,
 			$this->facing,
 			$fill,
 			true,
@@ -287,9 +304,10 @@ class Cone extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$replaceClipboard,
-			$replaceClipboard->getRelativePos(),
+			$replaceClipboard->getWorldVector(),
 			$this->radius,
 			$this->height,
+			$this->centerOfBase,
 			$this->facing,
 			true,
 			true,

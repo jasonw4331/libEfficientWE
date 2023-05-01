@@ -14,8 +14,8 @@ final class Clipboard{
 
 	/** @phpstan-var array<BlockPosHash, int|null> $fullBlocks */
 	private array $fullBlocks = [];
-	private ?Vector3 $relativePos;
-	private ?Vector3 $capVector;
+	private ?Vector3 $worldVector;
+	private ?Vector3 $worldMax;
 
 	/**
 	 * @phpstan-return array<BlockPosHash, int|null>
@@ -32,25 +32,25 @@ final class Clipboard{
 		return $this;
 	}
 
-	public function getRelativePos() : Vector3{
-		if($this->relativePos === null)
-			throw new \RuntimeException("RelativePos is not set");
-		return $this->relativePos;
+	public function getWorldVector() : Vector3{
+		if($this->worldVector === null)
+			throw new \RuntimeException("WorldMin is not set");
+		return $this->worldVector;
 	}
 
-	public function setRelativePos(Vector3 $relativePos) : self{
-		$this->relativePos = $relativePos;
+	public function setWorldVector(Vector3 $worldVector) : self{
+		$this->worldVector = $worldVector;
 		return $this;
 	}
 
-	public function getCapVector() : Vector3{
-		if($this->capVector === null)
-			throw new \RuntimeException("CapVector is not set");
-		return $this->capVector;
+	public function getWorldMax() : Vector3{
+		if($this->worldMax === null)
+			throw new \RuntimeException("WorldMax is not set");
+		return $this->worldMax;
 	}
 
-	public function setCapVector(Vector3 $capVector) : self{
-		$this->capVector = $capVector;
+	public function setWorldMax(Vector3 $worldMax) : self{
+		$this->worldMax = $worldMax;
 		return $this;
 	}
 

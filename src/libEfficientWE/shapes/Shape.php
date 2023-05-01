@@ -191,11 +191,12 @@ abstract class Shape{
 		$temporaryChunkLoader = new class implements ChunkLoader{
 		};
 
-		$caps = $this->clipboard->getCapVector();
-		$minChunkX = $this->clipboard->getRelativePos()->x >> 4;
-		$minChunkZ = $this->clipboard->getRelativePos()->z >> 4;
-		$maxChunkX = ($this->clipboard->getRelativePos()->x + $caps->x) >> 4;
-		$maxChunkZ = ($this->clipboard->getRelativePos()->z + $caps->z) >> 4;
+		$worldMax = $this->clipboard->getWorldMax();
+		$worldMin = $this->clipboard->getWorldVector();
+		$minChunkX = $worldMin->x >> 4;
+		$minChunkZ = $worldMin->z >> 4;
+		$maxChunkX = ($worldMin->x + $worldMax->x) >> 4;
+		$maxChunkZ = ($worldMin->z + $worldMax->z) >> 4;
 
 		// get center of all chunks
 		$chunkX = ($minChunkX + $maxChunkX) >> 1;

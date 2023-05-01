@@ -49,7 +49,7 @@ class Cuboid extends Shape{
 		$maxX = max($min->x, $max->x);
 		$maxY = max($min->y, $max->y);
 		$maxZ = max($min->z, $max->z);
-		return new self(new Vector3($minX, $minY, $minZ), new Vector3($maxX, $maxY, $maxZ));
+		return new self(new Vector3(0, 0, 0), new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
 	}
 
 	public static function fromAABB(AxisAlignedBB $alignedBB) : self{
@@ -59,30 +59,30 @@ class Cuboid extends Shape{
 		$maxX = max($alignedBB->minX, $alignedBB->maxX);
 		$maxY = max($alignedBB->minY, $alignedBB->maxY);
 		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
-		return new self(new Vector3($minX, $minY, $minZ), new Vector3($maxX, $maxY, $maxZ));
+		return new self(new Vector3(0, 0, 0), new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
 	}
 
 	public function copy(ChunkManager $world, Vector3 $worldPos) : void{
-		$subtractedVector = $this->lowCorner->subtractVector($worldPos);
-
-		$cap = $this->highCorner->subtractVector($this->lowCorner);
-		$xCap = $cap->x;
-		$yCap = $cap->y;
-		$zCap = $cap->z;
+		$worldLowCorner = $this->lowCorner->addVector($worldPos);
+		$worldHighCorner = $this->highCorner->addVector($worldPos);
 
 		$minX = $this->lowCorner->x;
 		$minY = $this->lowCorner->y;
 		$minZ = $this->lowCorner->z;
 
+		$maxX = $this->highCorner->x;
+		$maxY = $this->highCorner->y;
+		$maxZ = $this->highCorner->z;
+
 		/** @var array<BlockPosHash, int|null> $blocks */
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($world);
 
-		for($x = 0; $x <= $xCap; ++$x){
+		for($x = 0; $x <= $maxX; ++$x){
 			$ax = (int) floor($minX + $x);
-			for($z = 0; $z <= $zCap; ++$z){
+			for($z = 0; $z <= $maxZ; ++$z){
 				$az = (int) floor($minZ + $z);
-				for($y = 0; $y <= $yCap; ++$y){
+				for($y = 0; $y <= $maxY; ++$y){
 					$ay = (int) floor($minY + $y);
 					if($subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
@@ -91,7 +91,7 @@ class Cuboid extends Shape{
 			}
 		}
 
-		$this->clipboard->setFullBlocks($blocks)->setRelativePos($subtractedVector)->setCapVector($cap);
+		$this->clipboard->setFullBlocks($blocks)->setWorldVector($worldLowCorner)->setWorldMax($worldHighCorner);
 	}
 
 	public function paste(World $world, Vector3 $worldPos, bool $replaceAir = true, ?PromiseResolver $resolver = null) : Promise{
@@ -108,6 +108,8 @@ class Cuboid extends Shape{
 			$adjacentChunks,
 			$this->clipboard,
 			$worldPos,
+			$this->lowCorner,
+			$this->highCorner,
 			true,
 			$replaceAir,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
@@ -143,7 +145,9 @@ class Cuboid extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$setClipboard,
-			$setClipboard->getRelativePos(),
+			$setClipboard->getWorldVector(),
+			$this->lowCorner,
+			$this->highCorner,
 			$fill,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
@@ -179,7 +183,9 @@ class Cuboid extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$replaceClipboard,
-			$replaceClipboard->getRelativePos(),
+			$replaceClipboard->getWorldVector(),
+			$this->lowCorner,
+			$this->highCorner,
 			true,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
