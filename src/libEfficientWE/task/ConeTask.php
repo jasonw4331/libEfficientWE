@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\task;
 
+use libEfficientWE\shapes\Cone;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\math\Vector3;
@@ -25,6 +26,10 @@ final class ConeTask extends ChunksChangeTask{
 		$this->relativeCenter = igbinary_serialize($relativeCenter) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
 
+	/**
+	 * This method is executed on a worker thread to calculate the changes to the chunk. It is assumed the Clipboard
+	 * already contains the blocks to be set in the chunk, indexed by their Morton code in {@link Cone::copy()}
+	 */
 	protected function setBlocks(SimpleChunkManager $manager, int $chunkX, int $chunkZ, Chunk $chunk, Clipboard $clipboard) : Chunk{
 		/** @var Vector3 $relativeCenter */
 		$relativeCenter = igbinary_unserialize($this->relativeCenter);
