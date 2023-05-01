@@ -39,22 +39,22 @@ class Cuboid extends Shape {
 	}
 
 	public static function fromVector3(Vector3 $min, Vector3 $max) : self {
-		$minX = (int) min($min->x, $max->x);
-		$minY = (int) min($min->y, $max->y);
-		$minZ = (int) min($min->z, $max->z);
-		$maxX = (int) max($min->x, $max->x);
-		$maxY = (int) max($min->y, $max->y);
-		$maxZ = (int) max($min->z, $max->z);
+		$minX = min($min->x, $max->x);
+		$minY = min($min->y, $max->y);
+		$minZ = min($min->z, $max->z);
+		$maxX = max($min->x, $max->x);
+		$maxY = max($min->y, $max->y);
+		$maxZ = max($min->z, $max->z);
 		return new self(new Vector3($minX, $minY, $minZ), new Vector3($maxX, $maxY, $maxZ));
 	}
 
 	public static function fromAABB(AxisAlignedBB $alignedBB) : self {
-		$minX = (int) min($alignedBB->minX, $alignedBB->maxX);
-		$minY = (int) min($alignedBB->minY, $alignedBB->maxY);
-		$minZ = (int) min($alignedBB->minZ, $alignedBB->maxZ);
-		$maxX = (int) max($alignedBB->minX, $alignedBB->maxX);
-		$maxY = (int) max($alignedBB->minY, $alignedBB->maxY);
-		$maxZ = (int) max($alignedBB->minZ, $alignedBB->maxZ);
+		$minX = min($alignedBB->minX, $alignedBB->maxX);
+		$minY = min($alignedBB->minY, $alignedBB->maxY);
+		$minZ = min($alignedBB->minZ, $alignedBB->maxZ);
+		$maxX = max($alignedBB->minX, $alignedBB->maxX);
+		$maxY = max($alignedBB->minY, $alignedBB->maxY);
+		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
 		return new self(new Vector3($minX, $minY, $minZ), new Vector3($maxX, $maxY, $maxZ));
 	}
 
@@ -75,11 +75,11 @@ class Cuboid extends Shape {
 		$subChunkExplorer = new SubChunkExplorer($world);
 
 		for($x = 0; $x <= $xCap; ++$x) {
-			$ax = $minX + $x;
+			$ax = (int) floor($minX + $x);
 			for($z = 0; $z <= $zCap; ++$z) {
-				$az = $minZ + $z;
+				$az = (int) floor($minZ + $z);
 				for($y = 0; $y <= $yCap; ++$y) {
-					$ay = $minY + $y;
+					$ay = (int) floor($minY + $y);
 					if($subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID) {
 						$blocks[World::blockHash($ax, $ay, $az)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
