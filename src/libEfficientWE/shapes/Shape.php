@@ -53,11 +53,11 @@ abstract class Shape {
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	public final function cut(World $world, Vector3 $relativePos, ?PromiseResolver $resolver = null) : Promise {
+	public final function cut(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise {
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		$this->copy($world, $relativePos);
+		$this->copy($world, $worldPos);
 
 		$this->set($world, VanillaBlocks::AIR(), true)->onCompletion(
 			static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
@@ -67,13 +67,13 @@ abstract class Shape {
 		return $resolver->getPromise();
 	}
 
-	abstract public function copy(World $world, Vector3 $relativePos) : void;
+	abstract public function copy(World $world, Vector3 $worldPos) : void;
 
 	/**
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	abstract public function paste(World $world, Vector3 $relativePos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise;
+	abstract public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise;
 
 	/**
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
@@ -91,7 +91,7 @@ abstract class Shape {
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	public final function rotate(World $world, Vector3 $relativePos, Vector3 $relativeCenter, float $roll, float $yaw, float $pitch, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise {
+	public final function rotate(World $world, Vector3 $worldPos, Vector3 $relativeCenter, float $roll, float $yaw, float $pitch, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise {
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -99,8 +99,8 @@ abstract class Shape {
 		$totalledResolver = new PromiseResolver();
 		$changedBlocks = 0;
 
-		$this->cut($world, $relativePos)->onCompletion(
-			function(array $value) use($world, $relativePos, $relativeCenter, $roll, $yaw, $pitch, $replaceAir, $totalledResolver, &$changedBlocks) : void {
+		$this->cut($world, $worldPos)->onCompletion(
+			function(array $value) use($world, $worldPos, $relativeCenter, $roll, $yaw, $pitch, $replaceAir, $totalledResolver, &$changedBlocks) : void {
 				['blockCount' => $changedBlocks] = $value;
 				$cosYaw = cos(deg2rad($yaw));
 				$sinYaw = sin(deg2rad($yaw));
@@ -140,7 +140,7 @@ abstract class Shape {
 				}
 				$this->clipboard->setFullBlocks($newBlocks);
 
-				$this->paste($world, $relativePos, $replaceAir, $totalledResolver);
+				$this->paste($world, $worldPos, $replaceAir, $totalledResolver);
 			},
 			static fn() => $resolver->reject()
 		);
@@ -156,7 +156,7 @@ abstract class Shape {
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	public final function translate(World $world, Vector3 $relativePos, int $direction, int $offset, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise {
+	public final function translate(World $world, Vector3 $worldPos, int $direction, int $offset, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise {
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -164,10 +164,10 @@ abstract class Shape {
 		$totalledResolver = new PromiseResolver();
 		$changedBlocks = 0;
 
-		$this->cut($world, $relativePos)->onCompletion(
-			function(array $value) use($world, $relativePos, $direction, $offset, $replaceAir, $totalledResolver, &$changedBlocks) : void {
+		$this->cut($world, $worldPos)->onCompletion(
+			function(array $value) use($world, $worldPos, $direction, $offset, $replaceAir, $totalledResolver, &$changedBlocks) : void {
 				['blockCount' => $changedBlocks] = $value;
-				$this->paste($world, $relativePos->getSide($direction, $offset), $replaceAir, $totalledResolver);
+				$this->paste($world, $worldPos->getSide($direction, $offset), $replaceAir, $totalledResolver);
 			},
 			static fn() => $resolver->reject()
 		);

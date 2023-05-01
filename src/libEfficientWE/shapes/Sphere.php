@@ -22,20 +22,18 @@ use pocketmine\world\World;
  */
 class Sphere extends Shape {
 
-	protected Vector3 $relativeCenter;
-	protected int $radius;
+	protected float $radius;
 
-	private function __construct(Vector3 $relativeCenter, int $radius) {
-		$this->relativeCenter = $relativeCenter;
+	private function __construct(protected Vector3 $center, float $radius) {
 		$this->radius = abs($radius);
 		parent::__construct(null);
 	}
 
-	public function getRelativeCenter() : Vector3{
-		return $this->relativeCenter;
+	public function getCenter() : Vector3{
+		return $this->center;
 	}
 
-	public function getRadius() : int {
+	public function getRadius() : float {
 		return $this->radius;
 	}
 

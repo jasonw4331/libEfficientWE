@@ -58,8 +58,8 @@ class Cuboid extends Shape {
 		return new self(new Vector3($minX, $minY, $minZ), new Vector3($maxX, $maxY, $maxZ));
 	}
 
-	public function copy(ChunkManager $world, Vector3 $relativePos) : void {
-		$subtractedVector = $this->lowCorner->subtractVector($relativePos);
+	public function copy(ChunkManager $world, Vector3 $worldPos) : void {
+		$subtractedVector = $this->lowCorner->subtractVector($worldPos);
 
 		$cap = $this->highCorner->subtractVector($this->lowCorner);
 		$xCap = $cap->x;
@@ -90,7 +90,7 @@ class Cuboid extends Shape {
 		$this->clipboard->setFullBlocks($blocks)->setRelativePos($subtractedVector)->setCapVector($cap);
 	}
 
-	public function paste(World $world, Vector3 $relativePos, bool $replaceAir = true, ?PromiseResolver $resolver = null) : Promise {
+	public function paste(World $world, Vector3 $worldPos, bool $replaceAir = true, ?PromiseResolver $resolver = null) : Promise {
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -103,7 +103,7 @@ class Cuboid extends Shape {
 			$centerChunk,
 			$adjacentChunks,
 			$this->clipboard,
-			$relativePos,
+			$worldPos,
 			true,
 			$replaceAir,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{

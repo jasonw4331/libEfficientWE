@@ -30,20 +30,20 @@ class Cylinder extends Shape {
 
 	protected float $radius;
 
-	private function __construct(protected Vector3 $relativeCenter, float $radius, protected int $height) {
+	private function __construct(protected Vector3 $centerOfBase, float $radius, protected float $height, protected int $axis) {
 		$this->radius = abs($radius);
 		parent::__construct(null);
 	}
 
-	public function getRelativeCenter() : Vector3{
-		return $this->relativeCenter;
+	public function getCenterOfBase() : Vector3{
+		return $this->centerOfBase;
 	}
 
 	public function getRadius() : float {
 		return $this->radius;
 	}
 
-	public function getHeight() : int {
+	public function getHeight() : float {
 		return $this->height;
 	}
 
