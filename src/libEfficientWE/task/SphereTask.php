@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace libEfficientWE\task;
@@ -12,11 +13,16 @@ use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
+use function floor;
+use function igbinary_serialize;
+use function igbinary_unserialize;
+use function morton3d_decode;
+use function sqrt;
 
 /**
  * @internal
  */
-final class SphereTask extends ChunksChangeTask {
+final class SphereTask extends ChunksChangeTask{
 
 	private string $relativeCenter;
 
@@ -40,18 +46,18 @@ final class SphereTask extends ChunksChangeTask {
 
 		$iterator = new SubChunkExplorer($manager);
 
-		foreach($clipboard->getFullBlocks() as $mortonCode => $fullBlockId) {
+		foreach($clipboard->getFullBlocks() as $mortonCode => $fullBlockId){
 			[$x, $y, $z] = morton3d_decode($mortonCode);
 			$ax = (int) floor($relx + $x);
 			$ay = (int) floor($rely + $y);
 			$az = (int) floor($relz + $z);
-			if($fullBlockId !== null) {
+			if($fullBlockId !== null){
 				// make sure the chunk/block exists on this thread
-				if($iterator->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID) {
+				if($iterator->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 					// if replaceAir is false, do not set blocks where the clipboard has air
-					if($this->replaceAir || $fullBlockId !== VanillaBlocks::AIR()->getFullId()) {
+					if($this->replaceAir || $fullBlockId !== VanillaBlocks::AIR()->getFullId()){
 						// if fill is false, ignore interior blocks on the clipboard in spherical pattern
-						if($this->fill || sqrt($x * $x + $y * $y + $z * $z) === $this->radius) {
+						if($this->fill || sqrt($x * $x + $y * $y + $z * $z) === $this->radius){
 							$iterator->currentSubChunk?->setFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK, $fullBlockId);
 							++$this->changedBlocks;
 						}

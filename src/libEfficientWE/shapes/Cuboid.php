@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace libEfficientWE\shapes;
 
 use libEfficientWE\task\CuboidTask;
@@ -15,30 +16,33 @@ use pocketmine\world\format\SubChunk;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
 use pocketmine\world\World;
+use function array_map;
+use function floor;
 use function max;
 use function microtime;
 use function min;
+use function morton3d_encode;
 
 /**
  * A representation of a cuboid shape.
  *
  * @phpstan-import-type BlockPosHash from World
  */
-class Cuboid extends Shape {
+class Cuboid extends Shape{
 
-	private function __construct(protected Vector3 $lowCorner, protected Vector3 $highCorner) {
+	private function __construct(protected Vector3 $lowCorner, protected Vector3 $highCorner){
 		parent::__construct(null);
 	}
 
-	public function getLowCorner() : Vector3 {
+	public function getLowCorner() : Vector3{
 		return $this->lowCorner;
 	}
 
-	public function getHighCorner() : Vector3 {
+	public function getHighCorner() : Vector3{
 		return $this->highCorner;
 	}
 
-	public static function fromVector3(Vector3 $min, Vector3 $max) : self {
+	public static function fromVector3(Vector3 $min, Vector3 $max) : self{
 		$minX = min($min->x, $max->x);
 		$minY = min($min->y, $max->y);
 		$minZ = min($min->z, $max->z);
@@ -48,7 +52,7 @@ class Cuboid extends Shape {
 		return new self(new Vector3($minX, $minY, $minZ), new Vector3($maxX, $maxY, $maxZ));
 	}
 
-	public static function fromAABB(AxisAlignedBB $alignedBB) : self {
+	public static function fromAABB(AxisAlignedBB $alignedBB) : self{
 		$minX = min($alignedBB->minX, $alignedBB->maxX);
 		$minY = min($alignedBB->minY, $alignedBB->maxY);
 		$minZ = min($alignedBB->minZ, $alignedBB->maxZ);
@@ -58,7 +62,7 @@ class Cuboid extends Shape {
 		return new self(new Vector3($minX, $minY, $minZ), new Vector3($maxX, $maxY, $maxZ));
 	}
 
-	public function copy(ChunkManager $world, Vector3 $worldPos) : void {
+	public function copy(ChunkManager $world, Vector3 $worldPos) : void{
 		$subtractedVector = $this->lowCorner->subtractVector($worldPos);
 
 		$cap = $this->highCorner->subtractVector($this->lowCorner);
@@ -74,13 +78,13 @@ class Cuboid extends Shape {
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($world);
 
-		for($x = 0; $x <= $xCap; ++$x) {
+		for($x = 0; $x <= $xCap; ++$x){
 			$ax = (int) floor($minX + $x);
-			for($z = 0; $z <= $zCap; ++$z) {
+			for($z = 0; $z <= $zCap; ++$z){
 				$az = (int) floor($minZ + $z);
-				for($y = 0; $y <= $yCap; ++$y) {
+				for($y = 0; $y <= $yCap; ++$y){
 					$ay = (int) floor($minY + $y);
-					if($subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID) {
+					if($subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
 				}
@@ -90,7 +94,7 @@ class Cuboid extends Shape {
 		$this->clipboard->setFullBlocks($blocks)->setRelativePos($subtractedVector)->setCapVector($cap);
 	}
 
-	public function paste(World $world, Vector3 $worldPos, bool $replaceAir = true, ?PromiseResolver $resolver = null) : Promise {
+	public function paste(World $world, Vector3 $worldPos, bool $replaceAir = true, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -107,7 +111,7 @@ class Cuboid extends Shape {
 			true,
 			$replaceAir,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -143,7 +147,7 @@ class Cuboid extends Shape {
 			$fill,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -179,7 +183,7 @@ class Cuboid extends Shape {
 			true,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}

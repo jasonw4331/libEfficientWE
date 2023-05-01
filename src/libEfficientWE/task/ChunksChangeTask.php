@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace libEfficientWE\task;
 
 use libEfficientWE\utils\Clipboard;
@@ -13,6 +14,7 @@ use pocketmine\world\format\io\FastChunkSerializer;
 use pocketmine\world\generator\ThreadLocalGeneratorContext;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\World;
+use function array_map;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 
@@ -21,7 +23,7 @@ use function igbinary_unserialize;
  * @phpstan-import-type ChunkPosHash from World
  * @phpstan-type OnCompletion \Closure(Chunk $centerChunk, array<int, Chunk> $adjacentChunks, int $changedBlocks) : void
  */
-abstract class ChunksChangeTask extends AsyncTask {
+abstract class ChunksChangeTask extends AsyncTask{
 	private const TLS_KEY_ON_COMPLETION = "onCompletion";
 
 	protected ?string $chunk;
@@ -34,8 +36,9 @@ abstract class ChunksChangeTask extends AsyncTask {
 
 	/**
 	 * @param Chunk[]|null[] $adjacentChunks
+	 *
 	 * @phpstan-param array<ChunkPosHash, Chunk|null> $adjacentChunks
-	 * @phpstan-param OnCompletion $onCompletion
+	 * @phpstan-param OnCompletion                    $onCompletion
 	 */
 	public function __construct(
 		protected int $worldId,
@@ -101,7 +104,7 @@ abstract class ChunksChangeTask extends AsyncTask {
 		$this->adjacentChunks = igbinary_serialize($serialChunks) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
 
-	private function prepChunkManager(SimpleChunkManager $manager, int $chunkX, int $chunkZ, ?Chunk &$chunk) : void {
+	private function prepChunkManager(SimpleChunkManager $manager, int $chunkX, int $chunkZ, ?Chunk &$chunk) : void{
 		$manager->setChunk($chunkX, $chunkZ, $chunk ?? new Chunk([], BiomeArray::fill(BiomeIds::OCEAN), false));
 		if($chunk === null){
 			$chunk = $manager->getChunk($chunkX, $chunkZ);
@@ -116,7 +119,7 @@ abstract class ChunksChangeTask extends AsyncTask {
 
 	public function onCompletion() : void{
 		/**
-		 * @var \Closure $onCompletion
+		 * @var \Closure             $onCompletion
 		 * @phpstan-var OnCompletion $onCompletion
 		 */
 		$onCompletion = $this->fetchLocal(self::TLS_KEY_ON_COMPLETION);
@@ -126,7 +129,7 @@ abstract class ChunksChangeTask extends AsyncTask {
 			throw new AssumptionFailedError("Center chunk should never be null");
 
 		/**
-		 * @var string[]|null[] $serialAdjacentChunks
+		 * @var string[]|null[]                          $serialAdjacentChunks
 		 * @phpstan-var array<ChunkPosHash, string|null> $serialAdjacentChunks
 		 */
 		$serialAdjacentChunks = igbinary_unserialize($this->adjacentChunks);

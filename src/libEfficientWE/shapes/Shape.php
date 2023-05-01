@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace libEfficientWE\shapes;
 
 use libEfficientWE\task\ChunksChangeTask;
@@ -19,6 +20,8 @@ use function array_merge;
 use function cos;
 use function deg2rad;
 use function microtime;
+use function morton3d_decode;
+use function morton3d_encode;
 use function sin;
 
 /**
@@ -28,11 +31,11 @@ use function sin;
  * @phpstan-import-type ChunkPosHash from World
  * @phpstan-type promiseReturn array{"chunks": Chunk[], "time": float, "blockCount": int}
  */
-abstract class Shape {
+abstract class Shape{
 
 	protected Clipboard $clipboard;
 
-	protected function __construct(?Clipboard $clipboard = null) {
+	protected function __construct(?Clipboard $clipboard = null){
 		$this->clipboard = $clipboard ?? new Clipboard();
 	}
 
@@ -40,11 +43,11 @@ abstract class Shape {
 
 	abstract public static function fromAABB(AxisAlignedBB $alignedBB) : self;
 
-	public function getClipboard() : Clipboard {
+	public function getClipboard() : Clipboard{
 		return $this->clipboard;
 	}
 
-	public function setClipboard(Clipboard $clipboard) : self {
+	public function setClipboard(Clipboard $clipboard) : self{
 		$this->clipboard = $clipboard;
 		return $this;
 	}
@@ -53,7 +56,7 @@ abstract class Shape {
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	public final function cut(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise {
+	public final function cut(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -91,7 +94,7 @@ abstract class Shape {
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	public final function rotate(World $world, Vector3 $worldPos, Vector3 $relativeCenter, float $roll, float $yaw, float $pitch, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise {
+	public final function rotate(World $world, Vector3 $worldPos, Vector3 $relativeCenter, float $roll, float $yaw, float $pitch, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -100,7 +103,7 @@ abstract class Shape {
 		$changedBlocks = 0;
 
 		$this->cut($world, $worldPos)->onCompletion(
-			function(array $value) use($world, $worldPos, $relativeCenter, $roll, $yaw, $pitch, $replaceAir, $totalledResolver, &$changedBlocks) : void {
+			function(array $value) use ($world, $worldPos, $relativeCenter, $roll, $yaw, $pitch, $replaceAir, $totalledResolver, &$changedBlocks) : void{
 				['blockCount' => $changedBlocks] = $value;
 				$cosYaw = cos(deg2rad($yaw));
 				$sinYaw = sin(deg2rad($yaw));
@@ -111,7 +114,7 @@ abstract class Shape {
 				$pos = Vector3::zero();
 
 				$newBlocks = [];
-				foreach ($this->clipboard->getFullBlocks() as $mortonCode => $block) {
+				foreach($this->clipboard->getFullBlocks() as $mortonCode => $block){
 					[$x, $y, $z] = morton3d_decode($mortonCode);
 
 					$pos->x = $x - $relativeCenter->x;
@@ -156,7 +159,7 @@ abstract class Shape {
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	public final function translate(World $world, Vector3 $worldPos, int $direction, int $offset, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise {
+	public final function translate(World $world, Vector3 $worldPos, int $direction, int $offset, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -165,7 +168,7 @@ abstract class Shape {
 		$changedBlocks = 0;
 
 		$this->cut($world, $worldPos)->onCompletion(
-			function(array $value) use($world, $worldPos, $direction, $offset, $replaceAir, $totalledResolver, &$changedBlocks) : void {
+			function(array $value) use ($world, $worldPos, $direction, $offset, $replaceAir, $totalledResolver, &$changedBlocks) : void{
 				['blockCount' => $changedBlocks] = $value;
 				$this->paste($world, $worldPos->getSide($direction, $offset), $replaceAir, $totalledResolver);
 			},
@@ -182,10 +185,11 @@ abstract class Shape {
 	/**
 	 * @return array{int, int, ChunkLoader, ChunkLockId, Chunk|null, array<ChunkPosHash, Chunk|null>}
 	 */
-	protected final function prepWorld(World $world) : array {
+	protected final function prepWorld(World $world) : array{
 		$chunkPopulationLockId = new ChunkLockId();
 
-		$temporaryChunkLoader = new class implements ChunkLoader{};
+		$temporaryChunkLoader = new class implements ChunkLoader{
+		};
 
 		$caps = $this->clipboard->getCapVector();
 		$minChunkX = $this->clipboard->getRelativePos()->x >> 4;
@@ -197,8 +201,8 @@ abstract class Shape {
 		$chunkX = ($minChunkX + $maxChunkX) >> 1;
 		$chunkZ = ($minChunkZ + $maxChunkZ) >> 1;
 
-		for($xx = $minChunkX; $xx <= $maxChunkX; ++$xx) {
-			for($zz = $minChunkZ; $zz <= $maxChunkZ; ++$zz) {
+		for($xx = $minChunkX; $xx <= $maxChunkX; ++$xx){
+			for($zz = $minChunkZ; $zz <= $maxChunkZ; ++$zz){
 				$world->lockChunk($xx, $zz, $chunkPopulationLockId);
 				$world->registerChunkLoader($temporaryChunkLoader, $xx, $zz);
 			}
@@ -210,7 +214,7 @@ abstract class Shape {
 		return [$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks];
 	}
 
-	protected final static function resolveWorld(World $world, int $chunkX, int $chunkZ, ChunkLoader $temporaryChunkLoader, ChunkLockId $chunkPopulationLockId) : bool {
+	protected final static function resolveWorld(World $world, int $chunkX, int $chunkZ, ChunkLoader $temporaryChunkLoader, ChunkLockId $chunkPopulationLockId) : bool{
 		if(!$world->isLoaded()){
 			return false;
 		}

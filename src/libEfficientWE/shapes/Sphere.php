@@ -16,20 +16,23 @@ use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
 use pocketmine\world\World;
 use function abs;
+use function array_map;
+use function floor;
 use function max;
 use function microtime;
 use function min;
+use function morton3d_encode;
 
 /**
  * A representation of a sphere shape.
  *
  * @phpstan-import-type BlockPosHash from World
  */
-class Sphere extends Shape {
+class Sphere extends Shape{
 
 	protected float $radius;
 
-	private function __construct(protected Vector3 $center, float $radius) {
+	private function __construct(protected Vector3 $center, float $radius){
 		$this->radius = abs($radius);
 		parent::__construct(null);
 	}
@@ -38,11 +41,11 @@ class Sphere extends Shape {
 		return $this->center;
 	}
 
-	public function getRadius() : float {
+	public function getRadius() : float{
 		return $this->radius;
 	}
 
-	public static function fromVector3(Vector3 $min, Vector3 $max) : Shape {
+	public static function fromVector3(Vector3 $min, Vector3 $max) : Shape{
 		$minX = min($min->x, $max->x);
 		$minY = min($min->y, $max->y);
 		$minZ = min($min->z, $max->z);
@@ -55,7 +58,7 @@ class Sphere extends Shape {
 		return new self($center, $radius);
 	}
 
-	public static function fromAABB(AxisAlignedBB $alignedBB) : Shape {
+	public static function fromAABB(AxisAlignedBB $alignedBB) : Shape{
 		$minX = min($alignedBB->minX, $alignedBB->maxX);
 		$minY = min($alignedBB->minY, $alignedBB->maxY);
 		$minZ = min($alignedBB->minZ, $alignedBB->maxZ);
@@ -86,13 +89,13 @@ class Sphere extends Shape {
 		$subChunkExplorer = new SubChunkExplorer($world);
 
 		// loop from min to max if coordinate is in cylinder, save fullblockId
-		for($x = 0; $x <= $xCap; ++$x) {
+		for($x = 0; $x <= $xCap; ++$x){
 			$ax = (int) floor($minX + $x);
-			for($z = 0; $z <= $zCap; ++$z) {
+			for($z = 0; $z <= $zCap; ++$z){
 				$az = (int) floor($minZ + $z);
-				for($y = 0; $y <= $yCap; ++$y) {
+				for($y = 0; $y <= $yCap; ++$y){
 					$ay = (int) floor($minY + $y);
-					if($this->center->distance(new Vector3($x, $y, $z)) <= $this->radius && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID) {
+					if($this->center->distance(new Vector3($x, $y, $z)) <= $this->radius && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
 				}
@@ -120,7 +123,7 @@ class Sphere extends Shape {
 			true,
 			$replaceAir,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -157,7 +160,7 @@ class Sphere extends Shape {
 			$fill,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -194,7 +197,7 @@ class Sphere extends Shape {
 			true,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}

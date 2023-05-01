@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
@@ -17,6 +18,13 @@ use pocketmine\world\format\SubChunk;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
 use pocketmine\world\World;
+use function abs;
+use function array_map;
+use function floor;
+use function max;
+use function microtime;
+use function min;
+use function morton3d_encode;
 
 /**
  * A representation of a cone shape. The facing direction determines the face of the cone's tip. The cone's base is
@@ -28,7 +36,7 @@ class Cone extends Shape{
 
 	protected float $radius;
 
-	private function __construct(protected Vector3 $centerOfBase, float $radius, protected float $height, protected int $facing) {
+	private function __construct(protected Vector3 $centerOfBase, float $radius, protected float $height, protected int $facing){
 		$this->radius = abs($radius);
 		parent::__construct(null);
 	}
@@ -37,11 +45,11 @@ class Cone extends Shape{
 		return $this->centerOfBase;
 	}
 
-	public function getRadius() : float {
+	public function getRadius() : float{
 		return $this->radius;
 	}
 
-	public function getHeight() : float {
+	public function getHeight() : float{
 		return $this->height;
 	}
 
@@ -63,19 +71,19 @@ class Cone extends Shape{
 		Facing::validate($facing);
 
 		$axis = Facing::axis($facing);
-		$relativeCenterOfBase = (match($axis) {
+		$relativeCenterOfBase = (match ($axis) {
 			Axis::Y => new Vector3($minX + $maxX / 2, Facing::isPositive($facing) ? $maxY : $minY, $minZ + $maxZ / 2),
 			Axis::X => new Vector3(Facing::isPositive($facing) ? $maxX : $minX, $minY + $maxY / 2, $minZ + $maxZ / 2),
 			Axis::Z => new Vector3($minX + $maxX / 2, $minY + $maxY / 2, Facing::isPositive($facing) ? $maxZ : $minZ),
 			default => throw new AssumptionFailedError("Unhandled axis $axis")
 		})->subtract($minX, $minY, $minZ);
-		$height = match($axis) {
+		$height = match ($axis) {
 			Axis::Y => $maxY - $minY,
 			Axis::X => $maxX - $minX,
 			Axis::Z => $maxZ - $minZ,
 			default => throw new AssumptionFailedError("Unhandled axis $axis")
 		};
-		$radius = match($axis) {
+		$radius = match ($axis) {
 			Axis::Y => min($maxX - $minX, $maxZ - $minZ) / 2,
 			Axis::X => min($maxY - $minY, $maxZ - $minZ) / 2,
 			Axis::Z => min($maxX - $minX, $maxY - $minY) / 2,
@@ -99,19 +107,19 @@ class Cone extends Shape{
 		Facing::validate($facing);
 
 		$axis = Facing::axis($facing);
-		$relativeCenterOfBase = (match($axis) {
+		$relativeCenterOfBase = (match ($axis) {
 			Axis::Y => new Vector3($minX + $maxX / 2, Facing::isPositive($facing) ? $maxY : $minY, $minZ + $maxZ / 2),
 			Axis::X => new Vector3(Facing::isPositive($facing) ? $maxX : $minX, $minY + $maxY / 2, $minZ + $maxZ / 2),
 			Axis::Z => new Vector3($minX + $maxX / 2, $minY + $maxY / 2, Facing::isPositive($facing) ? $maxZ : $minZ),
 			default => throw new AssumptionFailedError("Unhandled axis $axis")
 		})->subtract($minX, $minY, $minZ);
-		$height = match($axis) {
+		$height = match ($axis) {
 			Axis::Y => $maxY - $minY,
 			Axis::X => $maxX - $minX,
 			Axis::Z => $maxZ - $minZ,
 			default => throw new AssumptionFailedError("Unhandled axis $axis")
 		};
-		$radius = match($axis) {
+		$radius = match ($axis) {
 			Axis::Y => min($maxX - $minX, $maxZ - $minZ) / 2,
 			Axis::X => min($maxY - $minY, $maxZ - $minZ) / 2,
 			Axis::Z => min($maxX - $minX, $maxY - $minY) / 2,
@@ -134,7 +142,7 @@ class Cone extends Shape{
 		$minY = $relativeMinimums->y;
 		$minZ = $relativeMinimums->z;
 
-		$coneTip = match($this->facing) {
+		$coneTip = match ($this->facing) {
 			Facing::UP => $this->centerOfBase->add(0, $this->height, 0),
 			Facing::DOWN => $this->centerOfBase->subtract(0, $this->height, 0),
 			Facing::SOUTH => $this->centerOfBase->add(0, 0, $this->height),
@@ -150,14 +158,14 @@ class Cone extends Shape{
 		$subChunkExplorer = new SubChunkExplorer($world);
 
 		// loop from min to max if coordinate is in cone, save fullblockId
-		for($x = 0; $x <= $xCap; ++$x) {
+		for($x = 0; $x <= $xCap; ++$x){
 			$ax = (int) floor($minX + $x);
-			for($z = 0; $z <= $zCap; ++$z) {
+			for($z = 0; $z <= $zCap; ++$z){
 				$az = (int) floor($minZ + $z);
-				for($y = 0; $y <= $yCap; ++$y) {
+				for($y = 0; $y <= $yCap; ++$y){
 					$ay = (int) floor($minY + $y);
 					// check if coordinate is in cylinder depending on axis
-					$relativePoint = match($this->facing) {
+					$relativePoint = match ($this->facing) {
 						Facing::UP => new Vector3($x, $y, $z),
 						Facing::DOWN => new Vector3($x, $this->height - $y, $z),
 						Facing::SOUTH => new Vector3($x, $z, $y),
@@ -175,7 +183,7 @@ class Cone extends Shape{
 					$maxRadiusAtHeight = $projectionLength / $this->height * $this->radius;
 					$inCone = $orthogonalDistance <= $maxRadiusAtHeight;
 
-					if($inCone && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID) {
+					if($inCone && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
 				}
@@ -208,7 +216,7 @@ class Cone extends Shape{
 			true,
 			$replaceAir,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -247,7 +255,7 @@ class Cone extends Shape{
 			$fill,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -286,7 +294,7 @@ class Cone extends Shape{
 			true,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
