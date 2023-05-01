@@ -30,37 +30,33 @@ final class CylinderTask extends ChunksChangeTask {
 		/** @var Vector3 $relativeCenter */
 		$relativeCenter = igbinary_unserialize($this->relativeCenter);
 
-		// use clipboard block ids to set blocks in cylinder pattern
-
 		$relativeCenter = $clipboard->getRelativePos()->addVector($relativeCenter);
 		$relx = $relativeCenter->x;
 		$rely = $relativeCenter->y;
 		$relz = $relativeCenter->z;
 
-		$caps = $clipboard->getCapVector();
-		$xCap = $caps->x;
-		$yCap = $caps->y;
-		$zCap = $caps->z;
-
 		$iterator = new SubChunkExplorer($manager);
 
-		for($x = 0; $x <= $xCap; ++$x) {
-			$xPos = $relx + $x;
-			for($z = 0; $z <= $zCap; ++$z) {
-				$zPos = $relz + $z;
-				for($y = 0; $y <= $yCap; ++$y) {
-					$yPos = $rely + $y;
-					$clipboardFullBlock = $clipboard->getFullBlocks()[World::blockHash($xPos, $yPos, $zPos)] ?? null;
-					if($clipboardFullBlock !== null) {
+		foreach($clipboard->getFullBlocks() as $mortonCode => $fullBlockId) {
+			[$x, $y, $z] = morton3d_decode($mortonCode);
+			$ax = (int) floor($relx + $x);
+			$ay = (int) floor($rely + $y);
+			$az = (int) floor($relz + $z);
+			if($fullBlockId !== null) {
+				// make sure the chunk/block exists on this thread
+				if($iterator->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID) {
+					// if replaceAir is false, do not set blocks where the clipboard has air
+					if($this->replaceAir || $fullBlockId !== VanillaBlocks::AIR()->getFullId()) {
 						// if fill is false, ignore interior blocks on the clipboard
-						if($this->fill || $x === 0 || $x === $xCap || $y === 0 || $y === $yCap || $z === 0 || $z === $zCap) {
-							// if replaceAir is false, do not set blocks where the clipboard has air
-							if($this->replaceAir || $clipboardFullBlock !== VanillaBlocks::AIR()->getFullId()) {
-								if($iterator->moveTo($xPos, $yPos, $zPos) !== SubChunkExplorerStatus::INVALID) {
-									$iterator->currentSubChunk?->setFullBlock($xPos & SubChunk::COORD_MASK, $yPos & SubChunk::COORD_MASK, $zPos & SubChunk::COORD_MASK, $clipboardFullBlock);
-									++$this->changedBlocks;
-								}
-							}
+						$edgeOfCylinder = match ($this->axis) {
+							Axis::Y => (new Vector2($relativeCenter->x, $relativeCenter->z))->distanceSquared(new Vector2($x, $z)) == $this->radius ** 2 && $y <= $this->height,
+							Axis::X => (new Vector2($relativeCenter->y, $relativeCenter->z))->distanceSquared(new Vector2($y, $z)) == $this->radius ** 2 && $x <= $this->height,
+							Axis::Z => (new Vector2($relativeCenter->x, $relativeCenter->y))->distanceSquared(new Vector2($x, $y)) == $this->radius ** 2 && $z <= $this->height,
+							default => throw new AssumptionFailedError("Invalid axis $this->axis")
+						};
+						if($this->fill || $edgeOfCylinder) {
+							$iterator->currentSubChunk?->setFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK, $fullBlockId);
+							++$this->changedBlocks;
 						}
 					}
 				}

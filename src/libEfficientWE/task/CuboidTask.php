@@ -12,7 +12,6 @@ use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
-use pocketmine\world\World;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 
@@ -46,23 +45,20 @@ final class CuboidTask extends ChunksChangeTask {
 
 		$iterator = new SubChunkExplorer($manager);
 
-		for($x = 0; $x <= $xCap; ++$x) {
-			$xPos = $relx + $x;
-			for($z = 0; $z <= $zCap; ++$z) {
-				$zPos = $relz + $z;
-				for($y = 0; $y <= $yCap; ++$y) {
-					$yPos = $rely + $y;
-					$clipboardFullBlock = $clipboard->getFullBlocks()[World::blockHash($xPos, $yPos, $zPos)] ?? null;
-					if($clipboardFullBlock !== null) {
+		foreach($clipboard->getFullBlocks() as $mortonCode => $fullBlockId) {
+			[$x, $y, $z] = morton3d_decode($mortonCode);
+			$ax = (int) floor($relx + $x);
+			$ay = (int) floor($rely + $y);
+			$az = (int) floor($relz + $z);
+			if($fullBlockId !== null) {
+				// make sure the chunk/block exists on this thread
+				if($iterator->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID) {
+					// if replaceAir is false, do not set blocks where the clipboard has air
+					if($this->replaceAir || $fullBlockId !== VanillaBlocks::AIR()->getFullId()) {
 						// if fill is false, ignore interior blocks on the clipboard
 						if($this->fill || $x === 0 || $x === $xCap || $y === 0 || $y === $yCap || $z === 0 || $z === $zCap) {
-							// if replaceAir is false, do not set blocks where the clipboard has air
-							if($this->replaceAir || $clipboardFullBlock !== VanillaBlocks::AIR()->getFullId()) {
-								if($iterator->moveTo($xPos, $yPos, $zPos) !== SubChunkExplorerStatus::INVALID) {
-									$iterator->currentSubChunk?->setFullBlock($xPos & SubChunk::COORD_MASK, $yPos & SubChunk::COORD_MASK, $zPos & SubChunk::COORD_MASK, $clipboardFullBlock);
-									++$this->changedBlocks;
-								}
-							}
+							$iterator->currentSubChunk?->setFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK, $fullBlockId);
+							++$this->changedBlocks;
 						}
 					}
 				}
