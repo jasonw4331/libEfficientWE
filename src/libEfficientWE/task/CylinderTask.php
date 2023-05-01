@@ -45,7 +45,7 @@ final class CylinderTask extends ChunksChangeTask{
 		/** @var Vector3 $centerOfBase */
 		$centerOfBase = igbinary_unserialize($this->centerOfBase);
 
-		$minVector = match($this->axis) {
+		$minVector = match ($this->axis) {
 			Axis::Y => $centerOfBase->subtract($this->radius, 0, $this->radius),
 			Axis::X => $centerOfBase->subtract(0, $this->radius, $this->radius),
 			Axis::Z => $centerOfBase->subtract($this->radius, $this->radius, 0),

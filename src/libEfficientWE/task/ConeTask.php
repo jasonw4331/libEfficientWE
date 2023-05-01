@@ -44,7 +44,7 @@ final class ConeTask extends ChunksChangeTask{
 		/** @var Vector3 $centerOfBase */
 		$centerOfBase = igbinary_unserialize($this->centerOfBase);
 
-		$minVector = match($this->facing) {
+		$minVector = match ($this->facing) {
 			Facing::UP => $centerOfBase->subtract($this->radius, 0, $this->radius),
 			Facing::DOWN => $centerOfBase->subtract($this->radius, $this->height, $this->radius),
 			Facing::SOUTH => $centerOfBase->subtract($this->radius, $this->radius, 0),

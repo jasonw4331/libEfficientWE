@@ -132,7 +132,7 @@ class Cone extends Shape{
 	public function copy(World $world, Vector3 $worldPos) : void{
 		$worldBaseCenter = $this->centerOfBase->addVector($worldPos);
 
-		$maxVector = match($this->facing) {
+		$maxVector = match ($this->facing) {
 			Facing::UP => $this->centerOfBase->add($this->radius, $this->height, $this->radius),
 			Facing::DOWN => $this->centerOfBase->add($this->radius, 0, $this->radius),
 			Facing::SOUTH => $this->centerOfBase->add($this->radius, $this->radius, $this->height),
@@ -140,7 +140,7 @@ class Cone extends Shape{
 			Facing::EAST => $this->centerOfBase->add($this->height, $this->radius, $this->radius),
 			Facing::WEST => $this->centerOfBase->add(0, $this->radius, $this->radius),
 		};
-		$minVector = match($this->facing) {
+		$minVector = match ($this->facing) {
 			Facing::UP => $this->centerOfBase->subtract($this->radius, 0, $this->radius),
 			Facing::DOWN => $this->centerOfBase->subtract($this->radius, $this->height, $this->radius),
 			Facing::SOUTH => $this->centerOfBase->subtract($this->radius, $this->radius, 0),

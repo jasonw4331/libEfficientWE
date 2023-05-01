@@ -118,12 +118,12 @@ class Cylinder extends Shape{
 	public function copy(World $world, Vector3 $worldPos) : void{
 		$worldBaseCenter = $this->centerOfBase->addVector($worldPos);
 
-		$maxVector = match($this->axis) {
+		$maxVector = match ($this->axis) {
 			Axis::Y => $this->centerOfBase->add($this->radius, $this->height, $this->radius),
 			Axis::X => $this->centerOfBase->add($this->height, $this->radius, $this->radius),
 			Axis::Z => $this->centerOfBase->add($this->radius, $this->radius, $this->height)
 		};
-		$minVector = match($this->axis) {
+		$minVector = match ($this->axis) {
 			Axis::Y => $this->centerOfBase->subtract($this->radius, 0, $this->radius),
 			Axis::X => $this->centerOfBase->subtract(0, $this->radius, $this->radius),
 			Axis::Z => $this->centerOfBase->subtract($this->radius, $this->radius, 0)
