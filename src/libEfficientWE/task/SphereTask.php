@@ -33,8 +33,6 @@ final class SphereTask extends ChunksChangeTask {
 		/** @var Vector3 $relativeCenter */
 		$relativeCenter = igbinary_unserialize($this->relativeCenter);
 
-		// use clipboard block ids to set blocks in spherical pattern
-
 		$relativeCenter = $clipboard->getRelativePos()->addVector($relativeCenter);
 		$relx = $relativeCenter->x;
 		$rely = $relativeCenter->y;
