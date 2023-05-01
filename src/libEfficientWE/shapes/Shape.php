@@ -111,8 +111,8 @@ abstract class Shape {
 				$pos = Vector3::zero();
 
 				$newBlocks = [];
-				foreach ($this->clipboard->getFullBlocks() as $blockHash => $block) {
-					World::getBlockXYZ($blockHash, $x, $y, $z);
+				foreach ($this->clipboard->getFullBlocks() as $mortonCode => $block) {
+					[$x, $y, $z] = morton3d_decode($mortonCode);
 
 					$pos->x = $x - $relativeCenter->x;
 					$pos->y = $y - $relativeCenter->y;
@@ -136,7 +136,7 @@ abstract class Shape {
 					$pos->y += $relativeCenter->y;
 					$pos->z += $relativeCenter->z;
 
-					$newBlocks[World::blockHash((int) $pos->x, (int) $pos->y, (int) $pos->z)] = $block;
+					$newBlocks[morton3d_encode((int) $pos->x, (int) $pos->y, (int) $pos->z)] = $block;
 				}
 				$this->clipboard->setFullBlocks($newBlocks);
 
