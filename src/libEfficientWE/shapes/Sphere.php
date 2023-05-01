@@ -136,10 +136,76 @@ class Sphere extends Shape {
 	}
 
 	public function set(World $world, Block $block, bool $fill, ?PromiseResolver $resolver = null) : Promise{
-		// TODO: Implement set() method.
+		$time = microtime(true);
+		$resolver ??= new PromiseResolver();
+
+		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+
+		// edit all clipboard block ids to be $block->getFullId()
+		$setClipboard = clone $this->clipboard;
+		$setClipboard->setFullBlocks(array_map(static fn(?int $fullBlock) => $block->getFullId(), $setClipboard->getFullBlocks()));
+
+		$world->getServer()->getAsyncPool()->submitTask(new SphereTask(
+			$world->getId(),
+			$chunkX,
+			$chunkZ,
+			$centerChunk,
+			$adjacentChunks,
+			$setClipboard,
+			$setClipboard->getRelativePos(),
+			$this->radius,
+			$fill,
+			true,
+			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+					$resolver->reject();
+					return;
+				}
+
+				$resolver->resolve([
+					'chunks' => [$centerChunk] + $adjacentChunks,
+					'time' => microtime(true) - $time,
+					'blockCount' => $changedBlocks,
+				]);
+			}
+		));
+		return $resolver->getPromise();
 	}
 
 	public function replace(World $world, Block $find, Block $replace, ?PromiseResolver $resolver = null) : Promise{
-		// TODO: Implement replace() method.
+		$time = microtime(true);
+		$resolver ??= new PromiseResolver();
+
+		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+
+		// edit all clipboard block ids to be $block->getFullId()
+		$replaceClipboard = clone $this->clipboard;
+		$replaceClipboard->setFullBlocks(array_map(static fn(?int $fullBlock) => $fullBlock === $find->getFullId() ? $replace->getFullId() : $fullBlock, $replaceClipboard->getFullBlocks()));
+
+		$world->getServer()->getAsyncPool()->submitTask(new SphereTask(
+			$world->getId(),
+			$chunkX,
+			$chunkZ,
+			$centerChunk,
+			$adjacentChunks,
+			$replaceClipboard,
+			$replaceClipboard->getRelativePos(),
+			$this->radius,
+			true,
+			true,
+			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)) {
+					$resolver->reject();
+					return;
+				}
+
+				$resolver->resolve([
+					'chunks' => [$centerChunk] + $adjacentChunks,
+					'time' => microtime(true) - $time,
+					'blockCount' => $changedBlocks,
+				]);
+			}
+		));
+		return $resolver->getPromise();
 	}
 }
