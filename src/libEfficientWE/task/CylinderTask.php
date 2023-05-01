@@ -5,6 +5,8 @@ namespace libEfficientWE\task;
 
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\VanillaBlocks;
+use pocketmine\math\Axis;
+use pocketmine\math\Vector2;
 use pocketmine\math\Vector3;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\format\Chunk;
@@ -12,7 +14,6 @@ use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
-use pocketmine\world\World;
 
 /**
  * @internal
@@ -21,9 +22,9 @@ final class CylinderTask extends ChunksChangeTask {
 
 	protected string $relativeCenter;
 
-	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $relativeCenter, protected float $radius, protected float $height, bool $fill, bool $replaceAir, \Closure $onCompletion){
+	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $worldPos, protected float $radius, protected float $height, protected int $axis, bool $fill, bool $replaceAir, \Closure $onCompletion){
 		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $fill, $replaceAir, $onCompletion);
-		$this->relativeCenter = igbinary_serialize($relativeCenter) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
+		$this->relativeCenter = igbinary_serialize($worldPos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
 
 	protected function setBlocks(SimpleChunkManager $manager, int $chunkX, int $chunkZ, Chunk $chunk, Clipboard $clipboard) : Chunk{

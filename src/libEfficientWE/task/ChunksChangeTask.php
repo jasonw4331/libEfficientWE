@@ -83,16 +83,16 @@ abstract class ChunksChangeTask extends AsyncTask {
 		/** @var Chunk $chunk */
 		$this->setBlocks($manager, $this->chunkX, $this->chunkZ, $chunk, $clipboard);
 
+		$this->chunk = FastChunkSerializer::serializeTerrain($chunk);
+
 		/** @var Chunk[] $resultChunks */
 		$resultChunks = []; //this is just to keep phpstan's type inference happy
 		foreach($chunks as $relativeChunkHash => $c){
 			World::getXZ($relativeChunkHash, $relativeX, $relativeZ);
 			$this->prepChunkManager($manager, $this->chunkX + $relativeX, $this->chunkZ + $relativeZ, $c);
-			$resultChunks[$relativeChunkHash] = $this->setBlocks($manager, $this->chunkX + $relativeX, $this->chunkZ + $relativeZ, $c);
+			$resultChunks[$relativeChunkHash] = $this->setBlocks($manager, $this->chunkX + $relativeX, $this->chunkZ + $relativeZ, $c, $clipboard);
 		}
 		$chunks = $resultChunks;
-
-		$this->chunk = FastChunkSerializer::serializeTerrain($chunk);
 
 		$serialChunks = [];
 		foreach($chunks as $relativeChunkHash => $c){

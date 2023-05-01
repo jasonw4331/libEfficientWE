@@ -12,14 +12,13 @@ use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
-use pocketmine\world\World;
 
 /**
  * @internal
  */
 final class SphereTask extends ChunksChangeTask {
 
-	protected string $relativeCenter;
+	private string $relativeCenter;
 
 	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $relativeCenter, protected float $radius, bool $fill, bool $replaceAir, \Closure $onCompletion){
 		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $fill, $replaceAir, $onCompletion);
