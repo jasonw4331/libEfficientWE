@@ -38,7 +38,8 @@ final class ConeTask extends ChunksChangeTask{
 	 * This method is executed on a worker thread to calculate the changes to the chunk. It is assumed the Clipboard
 	 * already contains the blocks to be set in the chunk, indexed by their Morton code in {@link Cone::copy()}
 	 */
-	protected function setBlocks(SimpleChunkManager $manager, int $chunkX, int $chunkZ, Chunk $chunk, Clipboard $clipboard) : Chunk{
+	protected function setBlocks(SimpleChunkManager $manager, Clipboard $clipboard) : int{
+		$changedBlocks = 0;
 		/** @var Vector3 $worldPos */
 		$worldPos = igbinary_unserialize($this->worldPos);
 		/** @var Vector3 $centerOfBase */
@@ -103,13 +104,13 @@ final class ConeTask extends ChunksChangeTask{
 
 						if($this->fill || $isEdgeOfCone){
 							$iterator->currentSubChunk?->setFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK, $fullBlockId);
-							++$this->changedBlocks;
+							++$changedBlocks;
 						}
 					}
 				}
 			}
 		}
 
-		return $chunk;
+		return $changedBlocks;
 	}
 }
