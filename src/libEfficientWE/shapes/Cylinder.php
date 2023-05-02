@@ -124,8 +124,6 @@ class Cylinder extends Shape{
 	}
 
 	public function copy(World $world, Vector3 $worldPos) : void{
-		$worldBaseCenter = $this->centerOfBase->addVector($worldPos);
-
 		$maxVector = match ($this->axis) {
 			Axis::Y => $this->centerOfBase->add($this->radius, $this->height, $this->radius),
 			Axis::X => $this->centerOfBase->add($this->height, $this->radius, $this->radius),
@@ -170,7 +168,7 @@ class Cylinder extends Shape{
 			}
 		}
 
-		$this->clipboard->setFullBlocks($blocks)->setWorldVector($worldBaseCenter)->setWorldMax($maxVector);
+		$this->clipboard->setFullBlocks($blocks)->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
 	}
 
 	public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
@@ -226,7 +224,7 @@ class Cylinder extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$setClipboard,
-			$setClipboard->getWorldVector(),
+			$setClipboard->getWorldMin(),
 			$this->radius,
 			$this->height,
 			$this->centerOfBase,
@@ -266,7 +264,7 @@ class Cylinder extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$replaceClipboard,
-			$replaceClipboard->getWorldVector(),
+			$replaceClipboard->getWorldMin(),
 			$this->radius,
 			$this->height,
 			$this->centerOfBase,

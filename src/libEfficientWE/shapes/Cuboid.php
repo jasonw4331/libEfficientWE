@@ -101,7 +101,7 @@ class Cuboid extends Shape{
 			}
 		}
 
-		$this->clipboard->setFullBlocks($blocks)->setWorldVector($worldLowCorner)->setWorldMax($worldHighCorner);
+		$this->clipboard->setFullBlocks($blocks)->setWorldMin($worldLowCorner)->setWorldMax($worldHighCorner);
 	}
 
 	public function paste(World $world, Vector3 $worldPos, bool $replaceAir = true, ?PromiseResolver $resolver = null) : Promise{
@@ -155,7 +155,7 @@ class Cuboid extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$setClipboard,
-			$setClipboard->getWorldVector(),
+			$setClipboard->getWorldMin(),
 			$this->lowCorner,
 			$this->highCorner,
 			$fill,
@@ -193,7 +193,7 @@ class Cuboid extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$replaceClipboard,
-			$replaceClipboard->getWorldVector(),
+			$replaceClipboard->getWorldMin(),
 			$this->lowCorner,
 			$this->highCorner,
 			true,

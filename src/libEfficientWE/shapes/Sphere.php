@@ -64,8 +64,6 @@ class Sphere extends Shape{
 	}
 
 	public function copy(World $world, Vector3 $worldPos) : void{
-		$worldCenter = $worldPos->add($this->radius, $this->radius, $this->radius);
-
 		$maxVector = new Vector3($this->radius * 2, $this->radius * 2, $this->radius * 2);
 		$minVector = Vector3::zero();
 
@@ -97,7 +95,7 @@ class Sphere extends Shape{
 			}
 		}
 
-		$this->clipboard->setFullBlocks($blocks)->setWorldVector($worldCenter)->setWorldMax($maxVector);
+		$this->clipboard->setFullBlocks($blocks)->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
 	}
 
 	public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
@@ -150,7 +148,7 @@ class Sphere extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$setClipboard,
-			$setClipboard->getWorldVector(),
+			$setClipboard->getWorldMin(),
 			$this->radius,
 			$fill,
 			true,
@@ -187,7 +185,7 @@ class Sphere extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$replaceClipboard,
-			$replaceClipboard->getWorldVector(),
+			$replaceClipboard->getWorldMin(),
 			$this->radius,
 			true,
 			true,

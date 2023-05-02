@@ -14,8 +14,8 @@ final class Clipboard{
 
 	/** @phpstan-var array<BlockPosHash, int|null> $fullBlocks */
 	private array $fullBlocks = [];
-	private ?Vector3 $worldVector;
-	private ?Vector3 $worldMax;
+	private ?Vector3 $worldMin;
+	private ?Vector3 $worldMax = null;
 
 	/**
 	 * @phpstan-return array<BlockPosHash, int|null>
@@ -32,14 +32,14 @@ final class Clipboard{
 		return $this;
 	}
 
-	public function getWorldVector() : Vector3{
-		if($this->worldVector === null)
+	public function getWorldMin() : Vector3{
+		if($this->worldMin === null)
 			throw new \RuntimeException("WorldMin is not set");
-		return $this->worldVector;
+		return $this->worldMin;
 	}
 
-	public function setWorldVector(Vector3 $worldVector) : self{
-		$this->worldVector = $worldVector;
+	public function setWorldMin(Vector3 $worldMin) : self{
+		$this->worldMin = $worldMin;
 		return $this;
 	}
 

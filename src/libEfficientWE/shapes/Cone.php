@@ -138,8 +138,6 @@ class Cone extends Shape{
 	}
 
 	public function copy(World $world, Vector3 $worldPos) : void{
-		$worldBaseCenter = $this->centerOfBase->addVector($worldPos);
-
 		$maxVector = match ($this->facing) {
 			Facing::UP => $this->centerOfBase->add($this->radius, $this->height, $this->radius),
 			Facing::DOWN => $this->centerOfBase->add($this->radius, 0, $this->radius),
@@ -213,7 +211,7 @@ class Cone extends Shape{
 			}
 		}
 
-		$this->clipboard->setFullBlocks($blocks)->setWorldVector($worldBaseCenter)->setWorldMax($maxVector);
+		$this->clipboard->setFullBlocks($blocks)->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
 	}
 
 	/**
@@ -272,7 +270,7 @@ class Cone extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$setClipboard,
-			$setClipboard->getWorldVector(),
+			$setClipboard->getWorldMin(),
 			$this->radius,
 			$this->height,
 			$this->centerOfBase,
@@ -312,7 +310,7 @@ class Cone extends Shape{
 			$centerChunk,
 			$adjacentChunks,
 			$replaceClipboard,
-			$replaceClipboard->getWorldVector(),
+			$replaceClipboard->getWorldMin(),
 			$this->radius,
 			$this->height,
 			$this->centerOfBase,

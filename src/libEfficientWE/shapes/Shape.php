@@ -197,7 +197,7 @@ abstract class Shape{
 		};
 
 		$worldMax = $this->clipboard->getWorldMax();
-		$worldMin = $this->clipboard->getWorldVector();
+		$worldMin = $this->clipboard->getWorldMin();
 		$minChunkX = $worldMin->x >> 4;
 		$minChunkZ = $worldMin->z >> 4;
 		$maxChunkX = ($worldMin->x + $worldMax->x) >> 4;
