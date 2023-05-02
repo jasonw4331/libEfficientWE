@@ -32,13 +32,9 @@ class Sphere extends Shape{
 
 	protected float $radius;
 
-	private function __construct(protected Vector3 $center, float $radius){
+	private function __construct(float $radius){
 		$this->radius = abs($radius);
 		parent::__construct(null);
-	}
-
-	public function getCenter() : Vector3{
-		return $this->center;
 	}
 
 	public function getRadius() : float{
@@ -47,43 +43,31 @@ class Sphere extends Shape{
 
 	public static function fromVector3(Vector3 $min, Vector3 $max) : Shape{
 		$minX = min($min->x, $max->x);
-		$minY = min($min->y, $max->y);
-		$minZ = min($min->z, $max->z);
 		$maxX = max($min->x, $max->x);
-		$maxY = max($min->y, $max->y);
-		$maxZ = max($min->z, $max->z);
 
-		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
+		if(self::canMortonEncode($maxX - $minX, $maxX - $minX, $maxX - $minX)){
 			throw new \InvalidArgumentException("Diameter must be less than 2^20 blocks");
 		}
 
-		$center = new Vector3($minX + $maxX / 2, $minY + $maxY / 2, $minZ + $maxZ / 2);
-		$radius = $maxY - $minY / 2;
-		return new self($center, $radius);
+		return new self($minX - $maxX / 2);
 	}
 
 	public static function fromAABB(AxisAlignedBB $alignedBB) : Shape{
 		$minX = min($alignedBB->minX, $alignedBB->maxX);
-		$minY = min($alignedBB->minY, $alignedBB->maxY);
-		$minZ = min($alignedBB->minZ, $alignedBB->maxZ);
 		$maxX = max($alignedBB->minX, $alignedBB->maxX);
-		$maxY = max($alignedBB->minY, $alignedBB->maxY);
-		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
 
-		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
+		if(self::canMortonEncode($maxX - $minX, $maxX - $minX, $maxX - $minX)){
 			throw new \InvalidArgumentException("Diameter must be less than 2^20 blocks");
 		}
 
-		$center = new Vector3($minX + $maxX / 2, $minY + $maxY / 2, $minZ + $maxZ / 2);
-		$radius = $maxY - $minY / 2;
-		return new self($center, $radius);
+		return new self($minX - $maxX / 2);
 	}
 
 	public function copy(World $world, Vector3 $worldPos) : void{
-		$worldCenter = $this->center->subtractVector($worldPos);
+		$worldCenter = $worldPos->add($this->radius, $this->radius, $this->radius);
 
-		$maxVector = $this->center->add($this->radius, $this->radius, $this->radius);
-		$minVector = $this->center->subtract($this->radius, $this->radius, $this->radius);
+		$maxVector = new Vector3($this->radius * 2, $this->radius * 2, $this->radius * 2);
+		$minVector = Vector3::zero();
 
 		$maxX = $maxVector->x;
 		$maxY = $maxVector->y;
@@ -97,6 +81,8 @@ class Sphere extends Shape{
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($world);
 
+		$center = new Vector3($this->radius, $this->radius, $this->radius);
+
 		// loop from 0 to max. if coordinate is in sphere, save fullblockId
 		for($x = 0; $x <= $maxX; ++$x){
 			$ax = (int) floor($minX + $x);
@@ -104,7 +90,7 @@ class Sphere extends Shape{
 				$az = (int) floor($minZ + $z);
 				for($y = 0; $y <= $maxY; ++$y){
 					$ay = (int) floor($minY + $y);
-					if($this->center->distanceSquared(new Vector3($x, $y, $z)) <= $this->radius ** 2 && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
+					if($center->distanceSquared(new Vector3($x, $y, $z)) <= $this->radius ** 2 && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
 				}
@@ -129,7 +115,6 @@ class Sphere extends Shape{
 			$this->clipboard,
 			$worldPos,
 			$this->radius,
-			$this->center,
 			true,
 			$replaceAir,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
@@ -167,7 +152,6 @@ class Sphere extends Shape{
 			$setClipboard,
 			$setClipboard->getWorldVector(),
 			$this->radius,
-			$this->center,
 			$fill,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
@@ -205,7 +189,6 @@ class Sphere extends Shape{
 			$replaceClipboard,
 			$replaceClipboard->getWorldVector(),
 			$this->radius,
-			$this->center,
 			true,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{

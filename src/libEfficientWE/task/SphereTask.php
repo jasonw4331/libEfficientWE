@@ -24,12 +24,10 @@ use function morton3d_decode;
 final class SphereTask extends ChunksChangeTask{
 
 	private string $worldPos;
-	private string $center;
 
-	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $worldPos, protected float $radius, Vector3 $center, bool $fill, bool $replaceAir, \Closure $onCompletion){
+	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $worldPos, protected float $radius, bool $fill, bool $replaceAir, \Closure $onCompletion){
 		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $fill, $replaceAir, $onCompletion);
 		$this->worldPos = igbinary_serialize($worldPos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
-		$this->center = igbinary_serialize($center) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
 
 	/**
@@ -39,10 +37,8 @@ final class SphereTask extends ChunksChangeTask{
 	protected function setBlocks(SimpleChunkManager $manager, int $chunkX, int $chunkZ, Chunk $chunk, Clipboard $clipboard) : Chunk{
 		/** @var Vector3 $worldPos */
 		$worldPos = igbinary_unserialize($this->worldPos);
-		/** @var Vector3 $center */
-		$center = igbinary_unserialize($this->center);
 
-		$worldCenter = $center->addVector($worldPos);
+		$worldCenter = $worldPos->add($this->radius, $this->radius, $this->radius);
 		$minX = $worldCenter->x - $this->radius;
 		$minY = $worldCenter->y - $this->radius;
 		$minZ = $worldCenter->z - $this->radius;
