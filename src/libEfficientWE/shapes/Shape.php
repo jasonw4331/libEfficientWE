@@ -65,9 +65,16 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		$this->copy($world, $worldPos);
+		/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
+		$totalledResolver = new PromiseResolver();
 
-		$this->set($world, VanillaBlocks::AIR(), true)->onCompletion(
+		$this->copy($world, $worldPos)->onCompletion(
+			function(array $value) use ($world, $totalledResolver) : void{
+				$this->set($world, VanillaBlocks::AIR(), true, $totalledResolver);
+			},
+			static fn() => $resolver->reject()
+		);
+		$totalledResolver->getPromise()->onCompletion(
 			static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
 			static fn() => $resolver->reject()
 		);
@@ -75,7 +82,11 @@ abstract class Shape{
 		return $resolver->getPromise();
 	}
 
-	abstract public function copy(World $world, Vector3 $worldPos) : void;
+	/**
+	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
+	 * @phpstan-return Promise<promiseReturn>
+	 */
+	abstract public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise;
 
 	/**
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
