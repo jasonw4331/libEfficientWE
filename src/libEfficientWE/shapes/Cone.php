@@ -110,7 +110,7 @@ class Cone extends Shape{
 		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
 		Facing::validate($facing);
 
-		if($minX - $maxX >= 2 ** 20){
+		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
 			throw new \InvalidArgumentException("Sphere diameter must be less than 2^20 blocks");
 		}
 
