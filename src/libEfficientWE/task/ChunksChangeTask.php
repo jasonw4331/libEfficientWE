@@ -32,7 +32,7 @@ abstract class ChunksChangeTask extends AsyncTask{
 
 	protected string $clipboard;
 
-	protected int $changedBlocks = 0;
+	private int $changedBlocks = 0;
 
 	/**
 	 * @param Chunk[]|null[] $adjacentChunks
@@ -80,26 +80,24 @@ abstract class ChunksChangeTask extends AsyncTask{
 			$serialChunks
 		);
 
+		/** @var Clipboard $clipboard */
 		$clipboard = igbinary_unserialize($this->clipboard);
 
 		$this->prepChunkManager($manager, $this->chunkX, $this->chunkZ, $chunk); // $chunk will always exist after this call
-		/** @var Chunk $chunk */
-		$this->setBlocks($manager, $this->chunkX, $this->chunkZ, $chunk, $clipboard);
-
-		$this->chunk = FastChunkSerializer::serializeTerrain($chunk);
-
-		/** @var Chunk[] $resultChunks */
-		$resultChunks = []; //this is just to keep phpstan's type inference happy
 		foreach($chunks as $relativeChunkHash => $c){
 			World::getXZ($relativeChunkHash, $relativeX, $relativeZ);
 			$this->prepChunkManager($manager, $this->chunkX + $relativeX, $this->chunkZ + $relativeZ, $c);
-			$resultChunks[$relativeChunkHash] = $this->setBlocks($manager, $this->chunkX + $relativeX, $this->chunkZ + $relativeZ, $c, $clipboard);
 		}
-		$chunks = $resultChunks;
+
+		$this->changedBlocks = $this->setBlocks($manager, $clipboard);
+
+		$this->chunk = FastChunkSerializer::serializeTerrain($chunk);
 
 		$serialChunks = [];
 		foreach($chunks as $relativeChunkHash => $c){
-			$serialChunks[$relativeChunkHash] = $c->isTerrainDirty() ? FastChunkSerializer::serializeTerrain($c) : null;
+			World::getXZ($relativeChunkHash, $relativeX, $relativeZ);
+			$chunk = $manager->getChunk($this->chunkX + $relativeX, $this->chunkZ + $relativeZ) ?? throw new AssumptionFailedError("Chunk should exist");
+			$serialChunks[$relativeChunkHash] = $c->isTerrainDirty() ? FastChunkSerializer::serializeTerrain($chunk) : null;
 		}
 		$this->adjacentChunks = igbinary_serialize($serialChunks) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
@@ -115,7 +113,7 @@ abstract class ChunksChangeTask extends AsyncTask{
 		}
 	}
 
-	abstract protected function setBlocks(SimpleChunkManager $manager, int $chunkX, int $chunkZ, Chunk $chunk, Clipboard $clipboard) : Chunk;
+	abstract protected function setBlocks(SimpleChunkManager $manager, Clipboard $clipboard) : int;
 
 	public function onCompletion() : void{
 		/**
