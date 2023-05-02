@@ -34,7 +34,8 @@ final class SphereTask extends ChunksChangeTask{
 	 * This method is executed on a worker thread to calculate the changes to the chunk. It is assumed the Clipboard
 	 * already contains the blocks to be set in the chunk, indexed by their Morton code in {@link Sphere::copy()}
 	 */
-	protected function setBlocks(SimpleChunkManager $manager, int $chunkX, int $chunkZ, Chunk $chunk, Clipboard $clipboard) : Chunk{
+	protected function setBlocks(SimpleChunkManager $manager, Clipboard $clipboard) : int{
+		$changedBlocks = 0;
 		/** @var Vector3 $worldPos */
 		$worldPos = igbinary_unserialize($this->worldPos);
 
@@ -58,13 +59,13 @@ final class SphereTask extends ChunksChangeTask{
 						// if fill is false, ignore interior blocks on the clipboard in spherical pattern
 						if($this->fill || $x * $x + $y * $y + $z * $z === $this->radius ** 2){
 							$iterator->currentSubChunk?->setFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK, $fullBlockId);
-							++$this->changedBlocks;
+							++$changedBlocks;
 						}
 					}
 				}
 			}
 		}
 
-		return $chunk;
+		return $changedBlocks;
 	}
 }
