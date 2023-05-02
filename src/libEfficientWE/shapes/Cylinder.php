@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
-use libEfficientWE\task\CylinderTask;
+use libEfficientWE\task\write\CylinderTask;
 use pocketmine\block\Block;
 use pocketmine\math\Axis;
 use pocketmine\math\AxisAlignedBB;

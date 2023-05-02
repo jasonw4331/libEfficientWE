@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace libEfficientWE\task;
+namespace libEfficientWE\task\write;
 
 use libEfficientWE\utils\Clipboard;
 use pocketmine\data\bedrock\BiomeIds;

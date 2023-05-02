@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
-use libEfficientWE\task\CuboidTask;
+use libEfficientWE\task\write\CuboidTask;
 use pocketmine\block\Block;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;

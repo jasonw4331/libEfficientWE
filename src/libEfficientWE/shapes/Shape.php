@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
-use libEfficientWE\task\ChunksChangeTask;
+use libEfficientWE\task\write\ChunksChangeTask;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\block\VanillaBlocks;
@@ -34,7 +34,7 @@ use function sin;
  */
 abstract class Shape{
 
-	private CONST MORTON_BITS = 2 ** 20; // 2 ^ 20 or 1048576
+	private const MORTON_BITS = 2 ** 20; // 2 ^ 20 or 1048576
 
 	protected Clipboard $clipboard;
 
@@ -53,7 +53,7 @@ abstract class Shape{
 
 	abstract public static function fromAABB(AxisAlignedBB $alignedBB) : self;
 
-	public static function canMortonEncode(float $xDiff, float $yDiff, float $zDiff) : bool {
+	public static function canMortonEncode(float $xDiff, float $yDiff, float $zDiff) : bool{
 		return $xDiff < self::MORTON_BITS && $yDiff < self::MORTON_BITS && $zDiff < self::MORTON_BITS;
 	}
 

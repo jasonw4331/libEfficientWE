@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
-use libEfficientWE\task\ConeTask;
+use libEfficientWE\task\write\ConeTask;
 use pocketmine\block\Block;
 use pocketmine\math\Axis;
 use pocketmine\math\AxisAlignedBB;

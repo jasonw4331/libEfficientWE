@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
-use libEfficientWE\task\copy\SphereCopyTask;
-use libEfficientWE\task\SphereTask;
+use libEfficientWE\task\read\SphereCopyTask;
+use libEfficientWE\task\write\SphereTask;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\math\AxisAlignedBB;
@@ -16,6 +16,7 @@ use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
 use function abs;
 use function array_map;
+use function count;
 use function max;
 use function microtime;
 use function min;
