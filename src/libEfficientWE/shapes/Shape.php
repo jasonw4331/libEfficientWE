@@ -34,6 +34,8 @@ use function sin;
  */
 abstract class Shape{
 
+	private CONST MORTON_BITS = 2 ** 20; // 2 ^ 20 or 1048576
+
 	protected Clipboard $clipboard;
 
 	protected function __construct(?Clipboard $clipboard = null){
@@ -50,6 +52,10 @@ abstract class Shape{
 	abstract public static function fromVector3(Vector3 $min, Vector3 $max) : self;
 
 	abstract public static function fromAABB(AxisAlignedBB $alignedBB) : self;
+
+	public static function canMortonEncode(float $xDiff, float $yDiff, float $zDiff) : bool {
+		return $xDiff < self::MORTON_BITS && $yDiff < self::MORTON_BITS && $zDiff < self::MORTON_BITS;
+	}
 
 	/**
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver

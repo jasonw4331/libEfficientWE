@@ -68,6 +68,10 @@ class Cylinder extends Shape{
 			throw new \InvalidArgumentException("Axis must be one of Axis::X, Axis::Y or Axis::Z");
 		}
 
+		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
+			throw new \InvalidArgumentException("Diameter and axis lengths must be less than 2^20 blocks");
+		}
+
 		$relativeCenterOfBase = (match ($axis) {
 			Axis::Y => new Vector3($minX + $maxX / 2, $minY, $minZ + $maxZ / 2),
 			Axis::X => new Vector3($minX, $minY + $maxY / 2, $minZ + $maxZ / 2),
@@ -95,6 +99,10 @@ class Cylinder extends Shape{
 		$maxZ = (int) max($alignedBB->minZ, $alignedBB->maxZ);
 		if($axis !== Axis::X && $axis !== Axis::Y && $axis !== Axis::Z){
 			throw new \InvalidArgumentException("Axis must be one of Axis::X, Axis::Y or Axis::Z");
+		}
+
+		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
+			throw new \InvalidArgumentException("Diameter and axis lengths must be less than 2^20 blocks");
 		}
 
 		$relativeCenterOfBase = (match ($axis) {

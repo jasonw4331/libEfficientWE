@@ -70,6 +70,10 @@ class Cone extends Shape{
 		$maxZ = max($min->z, $max->z);
 		Facing::validate($facing);
 
+		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
+			throw new \InvalidArgumentException("Sphere diameter must be less than 2^20 blocks");
+		}
+
 		$axis = Facing::axis($facing);
 		$relativeCenterOfBase = (match ($axis) {
 			Axis::Y => new Vector3($minX + $maxX / 2, Facing::isPositive($facing) ? $maxY : $minY, $minZ + $maxZ / 2),
@@ -105,6 +109,10 @@ class Cone extends Shape{
 		$maxY = max($alignedBB->minY, $alignedBB->maxY);
 		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
 		Facing::validate($facing);
+
+		if($minX - $maxX >= 2 ** 20){
+			throw new \InvalidArgumentException("Sphere diameter must be less than 2^20 blocks");
+		}
 
 		$axis = Facing::axis($facing);
 		$relativeCenterOfBase = (match ($axis) {

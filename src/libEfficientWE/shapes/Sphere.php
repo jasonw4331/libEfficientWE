@@ -53,6 +53,10 @@ class Sphere extends Shape{
 		$maxY = max($min->y, $max->y);
 		$maxZ = max($min->z, $max->z);
 
+		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
+			throw new \InvalidArgumentException("Diameter must be less than 2^20 blocks");
+		}
+
 		$center = new Vector3($minX + $maxX / 2, $minY + $maxY / 2, $minZ + $maxZ / 2);
 		$radius = $maxY - $minY / 2;
 		return new self($center, $radius);
@@ -65,6 +69,10 @@ class Sphere extends Shape{
 		$maxX = max($alignedBB->minX, $alignedBB->maxX);
 		$maxY = max($alignedBB->minY, $alignedBB->maxY);
 		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
+
+		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
+			throw new \InvalidArgumentException("Diameter must be less than 2^20 blocks");
+		}
 
 		$center = new Vector3($minX + $maxX / 2, $minY + $maxY / 2, $minZ + $maxZ / 2);
 		$radius = $maxY - $minY / 2;

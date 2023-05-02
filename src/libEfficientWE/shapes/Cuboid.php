@@ -49,6 +49,11 @@ class Cuboid extends Shape{
 		$maxX = max($min->x, $max->x);
 		$maxY = max($min->y, $max->y);
 		$maxZ = max($min->z, $max->z);
+
+		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
+			throw new \InvalidArgumentException("All axis lengths must be less than 2^20 blocks");
+		}
+
 		return new self(new Vector3(0, 0, 0), new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
 	}
 
@@ -59,6 +64,11 @@ class Cuboid extends Shape{
 		$maxX = max($alignedBB->minX, $alignedBB->maxX);
 		$maxY = max($alignedBB->minY, $alignedBB->maxY);
 		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
+
+		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
+			throw new \InvalidArgumentException("All axis lengths must be less than 2^20 blocks");
+		}
+
 		return new self(new Vector3(0, 0, 0), new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
 	}
 
