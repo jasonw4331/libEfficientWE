@@ -61,7 +61,7 @@ abstract class Shape{
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	public final function cut(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
+	final public function cut(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -110,7 +110,7 @@ abstract class Shape{
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	public final function rotate(World $world, Vector3 $worldPos, Vector3 $relativeCenter, float $roll, float $yaw, float $pitch, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
+	final public function rotate(World $world, Vector3 $worldPos, Vector3 $relativeCenter, float $roll, float $yaw, float $pitch, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -175,7 +175,7 @@ abstract class Shape{
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	public final function translate(World $world, Vector3 $worldPos, int $direction, int $offset, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
+	final public function translate(World $world, Vector3 $worldPos, int $direction, int $offset, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
@@ -201,7 +201,7 @@ abstract class Shape{
 	/**
 	 * @return array{int, int, ChunkLoader, ChunkLockId, Chunk|null, array<ChunkPosHash, Chunk|null>}
 	 */
-	protected final function prepWorld(World $world) : array{
+	final protected function prepWorld(World $world) : array{
 		$chunkPopulationLockId = new ChunkLockId();
 
 		$temporaryChunkLoader = new class implements ChunkLoader{
@@ -231,7 +231,7 @@ abstract class Shape{
 		return [$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks];
 	}
 
-	protected final static function resolveWorld(World $world, int $chunkX, int $chunkZ, ChunkLoader $temporaryChunkLoader, ChunkLockId $chunkPopulationLockId) : bool{
+	final protected static function resolveWorld(World $world, int $chunkX, int $chunkZ, ChunkLoader $temporaryChunkLoader, ChunkLockId $chunkPopulationLockId) : bool{
 		if(!$world->isLoaded()){
 			return false;
 		}
