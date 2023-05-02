@@ -4,24 +4,20 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
+use libEfficientWE\task\read\CuboidCopyTask;
 use libEfficientWE\task\write\CuboidTask;
+use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
-use pocketmine\world\ChunkManager;
 use pocketmine\world\format\Chunk;
-use pocketmine\world\format\SubChunk;
-use pocketmine\world\utils\SubChunkExplorer;
-use pocketmine\world\utils\SubChunkExplorerStatus;
 use pocketmine\world\World;
 use function array_map;
-use function floor;
 use function max;
 use function microtime;
 use function min;
-use function morton3d_encode;
 
 /**
  * A representation of a cuboid shape.
@@ -72,36 +68,35 @@ class Cuboid extends Shape{
 		return new self(new Vector3(0, 0, 0), new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
 	}
 
-	public function copy(ChunkManager $world, Vector3 $worldPos) : void{
-		$worldLowCorner = $this->lowCorner->addVector($worldPos);
-		$worldHighCorner = $this->highCorner->addVector($worldPos);
+	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
+		$time = microtime(true);
+		$resolver ??= new PromiseResolver();
 
-		$minX = $this->lowCorner->x;
-		$minY = $this->lowCorner->y;
-		$minZ = $this->lowCorner->z;
+		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
 
-		$maxX = $this->highCorner->x;
-		$maxY = $this->highCorner->y;
-		$maxZ = $this->highCorner->z;
+		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($this->highCorner));
 
-		/** @var array<BlockPosHash, int|null> $blocks */
-		$blocks = [];
-		$subChunkExplorer = new SubChunkExplorer($world);
-
-		for($x = 0; $x <= $maxX; ++$x){
-			$ax = (int) floor($minX + $x);
-			for($z = 0; $z <= $maxZ; ++$z){
-				$az = (int) floor($minZ + $z);
-				for($y = 0; $y <= $maxY; ++$y){
-					$ay = (int) floor($minY + $y);
-					if($subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
-						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
-					}
+		$world->getServer()->getAsyncPool()->submitTask(new CuboidCopyTask(
+			$world->getId(),
+			$chunkX,
+			$chunkZ,
+			$centerChunk,
+			$adjacentChunks,
+			$this->clipboard,
+			static function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
+				if(!parent::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+					$resolver->reject();
+					return;
 				}
-			}
-		}
 
-		$this->clipboard->setFullBlocks($blocks)->setWorldMin($worldLowCorner)->setWorldMax($worldHighCorner);
+				$resolver->resolve([
+					'chunks' => [$centerChunk] + $adjacentChunks,
+					'time' => microtime(true) - $time,
+					'blockCount' => count($clipboard->getFullBlocks()),
+				]);
+			}
+		));
+		return $resolver->getPromise();
 	}
 
 	public function paste(World $world, Vector3 $worldPos, bool $replaceAir = true, ?PromiseResolver $resolver = null) : Promise{
