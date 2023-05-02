@@ -29,6 +29,7 @@ use function sin;
  *
  * @internal
  * @phpstan-import-type ChunkPosHash from World
+ * @phpstan-import-type BlockPosHash from World
  * @phpstan-type promiseReturn array{"chunks": Chunk[], "time": float, "blockCount": int}
  */
 abstract class Shape{
@@ -39,18 +40,16 @@ abstract class Shape{
 		$this->clipboard = $clipboard ?? new Clipboard();
 	}
 
+	/**
+	 * @phpstan-return array<BlockPosHash, int|null>
+	 */
+	public function getClipboardBlocks() : array{
+		return $this->clipboard->getFullBlocks();
+	}
+
 	abstract public static function fromVector3(Vector3 $min, Vector3 $max) : self;
 
 	abstract public static function fromAABB(AxisAlignedBB $alignedBB) : self;
-
-	public function getClipboard() : Clipboard{
-		return $this->clipboard;
-	}
-
-	public function setClipboard(Clipboard $clipboard) : self{
-		$this->clipboard = $clipboard;
-		return $this;
-	}
 
 	/**
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
