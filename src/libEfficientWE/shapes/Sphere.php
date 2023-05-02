@@ -4,24 +4,21 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
+use libEfficientWE\task\copy\SphereCopyTask;
 use libEfficientWE\task\SphereTask;
+use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
 use pocketmine\world\format\Chunk;
-use pocketmine\world\format\SubChunk;
-use pocketmine\world\utils\SubChunkExplorer;
-use pocketmine\world\utils\SubChunkExplorerStatus;
 use pocketmine\world\World;
 use function abs;
 use function array_map;
-use function floor;
 use function max;
 use function microtime;
 use function min;
-use function morton3d_encode;
 
 /**
  * A representation of a sphere shape.
@@ -63,39 +60,36 @@ class Sphere extends Shape{
 		return new self($minX - $maxX / 2);
 	}
 
-	public function copy(World $world, Vector3 $worldPos) : void{
-		$maxVector = new Vector3($this->radius * 2, $this->radius * 2, $this->radius * 2);
-		$minVector = Vector3::zero();
+	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
+		$time = microtime(true);
+		$resolver ??= new PromiseResolver();
 
-		$maxX = $maxVector->x;
-		$maxY = $maxVector->y;
-		$maxZ = $maxVector->z;
+		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
 
-		$minX = $minVector->x;
-		$minY = $minVector->y;
-		$minZ = $minVector->z;
+		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->add($this->radius * 2, $this->radius * 2, $this->radius * 2));
 
-		/** @var array<BlockPosHash, int|null> $blocks */
-		$blocks = [];
-		$subChunkExplorer = new SubChunkExplorer($world);
-
-		$center = new Vector3($this->radius, $this->radius, $this->radius);
-
-		// loop from 0 to max. if coordinate is in sphere, save fullblockId
-		for($x = 0; $x <= $maxX; ++$x){
-			$ax = (int) floor($minX + $x);
-			for($z = 0; $z <= $maxZ; ++$z){
-				$az = (int) floor($minZ + $z);
-				for($y = 0; $y <= $maxY; ++$y){
-					$ay = (int) floor($minY + $y);
-					if($center->distanceSquared(new Vector3($x, $y, $z)) <= $this->radius ** 2 && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
-						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
-					}
+		$world->getServer()->getAsyncPool()->submitTask(new SphereCopyTask(
+			$world->getId(),
+			$chunkX,
+			$chunkZ,
+			$centerChunk,
+			$adjacentChunks,
+			$this->radius,
+			$this->clipboard,
+			static function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+					$resolver->reject();
+					return;
 				}
-			}
-		}
 
-		$this->clipboard->setFullBlocks($blocks)->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
+				$resolver->resolve([
+					'chunks' => [$centerChunk] + $adjacentChunks,
+					'time' => microtime(true) - $time,
+					'blockCount' => count($clipboard->getFullBlocks()),
+				]);
+			}
+		));
+		return $resolver->getPromise();
 	}
 
 	public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
