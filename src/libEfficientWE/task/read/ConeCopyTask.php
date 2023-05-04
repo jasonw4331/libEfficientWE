@@ -19,7 +19,7 @@ use pocketmine\world\utils\SubChunkExplorerStatus;
 final class ConeCopyTask extends ChunksCopyTask{
 
 	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, protected float $radius, protected float $height, protected int $facing, Clipboard $clipboard, \Closure $onCompletion) {
-		parent::__construct($worldId,$chunkX,$chunkZ,$chunk,$adjacentChunks,$clipboard,$onCompletion);
+		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $onCompletion);
 	}
 
 	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Clipboard $clipboard) : array{
