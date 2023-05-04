@@ -4,27 +4,22 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
+use libEfficientWE\task\read\SphereCopyTask;
 use libEfficientWE\task\write\CylinderTask;
+use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\math\Axis;
 use pocketmine\math\AxisAlignedBB;
-use pocketmine\math\Vector2;
 use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
-use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\format\Chunk;
-use pocketmine\world\format\SubChunk;
-use pocketmine\world\utils\SubChunkExplorer;
-use pocketmine\world\utils\SubChunkExplorerStatus;
 use pocketmine\world\World;
 use function abs;
 use function array_map;
-use function floor;
 use function max;
 use function microtime;
 use function min;
-use function morton3d_encode;
 
 /**
  * A representation of a cylinder shape. The default axis is {@link Axis::Y}, making the cylinder base at its lowest coordinate, but it can be
@@ -121,52 +116,42 @@ class Cylinder extends Shape{
 		return new self($relativeCenterOfBase, $radius, $height, $axis);
 	}
 
-	public function copy(World $world, Vector3 $worldPos) : void{
+	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
+		$time = microtime(true);
+		$resolver ??= new PromiseResolver();
+
+		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+
 		$maxVector = match ($this->axis) {
 			Axis::Y => $this->centerOfBase->add($this->radius, $this->height, $this->radius),
 			Axis::X => $this->centerOfBase->add($this->height, $this->radius, $this->radius),
 			Axis::Z => $this->centerOfBase->add($this->radius, $this->radius, $this->height)
 		};
-		$minVector = match ($this->axis) {
-			Axis::Y => $this->centerOfBase->subtract($this->radius, 0, $this->radius),
-			Axis::X => $this->centerOfBase->subtract(0, $this->radius, $this->radius),
-			Axis::Z => $this->centerOfBase->subtract($this->radius, $this->radius, 0)
-		};
 
-		$maxX = $maxVector->x;
-		$maxY = $maxVector->y;
-		$maxZ = $maxVector->z;
+		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
 
-		$minX = $minVector->x;
-		$minY = $minVector->y;
-		$minZ = $minVector->z;
-
-		/** @var array<BlockPosHash, int|null> $blocks */
-		$blocks = [];
-		$subChunkExplorer = new SubChunkExplorer($world);
-
-		// loop from min to max if coordinate is in cylinder, save fullblockId
-		for($x = 0; $x <= $maxX; ++$x){
-			$ax = (int) floor($minX + $x);
-			for($z = 0; $z <= $maxZ; ++$z){
-				$az = (int) floor($minZ + $z);
-				for($y = 0; $y <= $maxY; ++$y){
-					$ay = (int) floor($minY + $y);
-					// check if coordinate is in cylinder depending on axis
-					$inCylinder = match ($this->axis) {
-						Axis::Y => (new Vector2($this->centerOfBase->x, $this->centerOfBase->z))->distanceSquared(new Vector2($x, $z)) <= $this->radius ** 2 && $y <= $this->height,
-						Axis::X => (new Vector2($this->centerOfBase->y, $this->centerOfBase->z))->distanceSquared(new Vector2($y, $z)) <= $this->radius ** 2 && $x <= $this->height,
-						Axis::Z => (new Vector2($this->centerOfBase->x, $this->centerOfBase->y))->distanceSquared(new Vector2($x, $y)) <= $this->radius ** 2 && $z <= $this->height,
-						default => throw new AssumptionFailedError("Invalid axis $this->axis")
-					};
-					if($inCylinder && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
-						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
-					}
+		$world->getServer()->getAsyncPool()->submitTask(new SphereCopyTask(
+			$world->getId(),
+			$chunkX,
+			$chunkZ,
+			$centerChunk,
+			$adjacentChunks,
+			$this->radius,
+			$this->clipboard,
+			static function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+					$resolver->reject();
+					return;
 				}
-			}
-		}
 
-		$this->clipboard->setFullBlocks($blocks)->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
+				$resolver->resolve([
+					'chunks' => [$centerChunk] + $adjacentChunks,
+					'time' => microtime(true) - $time,
+					'blockCount' => count($clipboard->getFullBlocks()),
+				]);
+			}
+		));
+		return $resolver->getPromise();
 	}
 
 	public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
