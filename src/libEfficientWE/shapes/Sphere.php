@@ -23,8 +23,6 @@ use function min;
 
 /**
  * A representation of a sphere shape.
- *
- * @phpstan-import-type BlockPosHash from World
  */
 class Sphere extends Shape{
 

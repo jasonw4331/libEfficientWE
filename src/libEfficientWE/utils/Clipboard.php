@@ -5,27 +5,23 @@ declare(strict_types=1);
 namespace libEfficientWE\utils;
 
 use pocketmine\math\Vector3;
-use pocketmine\world\World;
 
-/**
- * @phpstan-import-type BlockPosHash from World
- */
 final class Clipboard{
 
-	/** @phpstan-var array<BlockPosHash, int|null> $fullBlocks */
+	/** @phpstan-var array<int, int|null> $fullBlocks */
 	private array $fullBlocks = [];
 	private ?Vector3 $worldMin;
 	private ?Vector3 $worldMax = null;
 
 	/**
-	 * @phpstan-return array<BlockPosHash, int|null>
+	 * @phpstan-return array<int, int|null>
 	 */
 	public function getFullBlocks() : array{
 		return $this->fullBlocks;
 	}
 
 	/**
-	 * @phpstan-param array<BlockPosHash, int|null> $fullBlocks
+	 * @phpstan-param array<int, int|null> $fullBlocks
 	 */
 	public function setFullBlocks(array $fullBlocks) : self{
 		$this->fullBlocks = $fullBlocks;

@@ -29,7 +29,6 @@ use function sin;
  *
  * @internal
  * @phpstan-import-type ChunkPosHash from World
- * @phpstan-import-type BlockPosHash from World
  * @phpstan-type promiseReturn array{"chunks": Chunk[], "time": float, "blockCount": int}
  */
 abstract class Shape{
@@ -43,7 +42,7 @@ abstract class Shape{
 	}
 
 	/**
-	 * @phpstan-return array<BlockPosHash, int|null>
+	 * @phpstan-return array<int, int|null>
 	 */
 	public function getClipboardBlocks() : array{
 		return $this->clipboard->getFullBlocks();

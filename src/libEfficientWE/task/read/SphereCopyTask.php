@@ -11,13 +11,11 @@ use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
-use pocketmine\world\World;
 use function floor;
 use function morton3d_encode;
 
 /**
  * @internal
- * @phpstan-import-type BlockPosHash from World
  */
 final class SphereCopyTask extends ChunksCopyTask{
 
@@ -31,7 +29,7 @@ final class SphereCopyTask extends ChunksCopyTask{
 	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos) : array{
 		$worldMax = $worldPos->add($this->radius * 2, $this->radius * 2, $this->radius * 2);
 
-		/** @var array<BlockPosHash, int|null> $blocks */
+		/** @var array<int, int|null> $blocks */
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($manager);
 

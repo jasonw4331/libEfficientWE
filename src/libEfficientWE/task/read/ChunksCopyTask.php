@@ -22,7 +22,6 @@ use function igbinary_unserialize;
 /**
  * @internal
  * @phpstan-import-type ChunkPosHash from World
- * @phpstan-import-type BlockPosHash from World
  * @phpstan-type OnCompletion \Closure(Clipboard) : void
  */
 abstract class ChunksCopyTask extends AsyncTask{
@@ -106,7 +105,7 @@ abstract class ChunksCopyTask extends AsyncTask{
 	}
 
 	/**
-	 * @phpstan-return array<BlockPosHash, int|null>
+	 * @phpstan-return array<int, int|null>
 	 */
 	abstract protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos) : array;
 

@@ -29,8 +29,6 @@ use function morton3d_encode;
 /**
  * A representation of a cone shape. The facing direction determines the face of the cone's tip. The cone's base is
  * always the opposite face of passed {@link Facing} direction.
- *
- * @phpstan-import-type BlockPosHash from World
  */
 class Cone extends Shape{
 

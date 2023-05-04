@@ -10,14 +10,12 @@ use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
-use pocketmine\world\World;
 use function floor;
 use function igbinary_unserialize;
 use function morton3d_encode;
 
 /**
  * @internal
- * @phpstan-import-type BlockPosHash from World
  */
 final class CuboidCopyTask extends ChunksCopyTask{
 
@@ -31,7 +29,7 @@ final class CuboidCopyTask extends ChunksCopyTask{
 		$worldLowCorner = $worldPos;
 		$worldHighCorner = $worldPos->addVector($clipboard->getWorldMax()->subtractVector($clipboard->getWorldMin()));
 
-		/** @var array<BlockPosHash, int|null> $blocks */
+		/** @var array<int, int|null> $blocks */
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($manager);
 
