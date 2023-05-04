@@ -15,7 +15,6 @@ use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
 use function floor;
-use function igbinary_unserialize;
 use function morton3d_encode;
 
 class CylinderCopyTask extends ChunksCopyTask{
@@ -24,9 +23,10 @@ class CylinderCopyTask extends ChunksCopyTask{
 		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $onCompletion);
 	}
 
-	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos) : array{
-		/** @var Clipboard $clipboard */
-		$clipboard = igbinary_unserialize($this->clipboard);
+	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Clipboard $clipboard) : array{
+		/** @var array<int, int|null> $blocks */
+		$blocks = [];
+		$subChunkExplorer = new SubChunkExplorer($manager);
 
 		$maxVector = $worldPos->addVector($clipboard->getWorldMax()->subtractVector($clipboard->getWorldMin()));
 		$centerOfBase = match($this->axis) {
@@ -35,10 +35,6 @@ class CylinderCopyTask extends ChunksCopyTask{
 			Axis::Z => $worldPos->add($this->radius, $this->radius, 0),
 			default => throw new AssumptionFailedError("Invalid axis $this->axis")
 		};
-
-		/** @var array<int, int|null> $blocks */
-		$blocks = [];
-		$subChunkExplorer = new SubChunkExplorer($manager);
 
 		// loop from min to max if coordinate is in cylinder, save fullblockId
 		for($x = 0; $x <= $maxVector->x; ++$x){

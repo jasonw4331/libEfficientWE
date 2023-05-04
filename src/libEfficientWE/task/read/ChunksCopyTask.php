@@ -89,7 +89,7 @@ abstract class ChunksCopyTask extends AsyncTask{
 		$clipboard = igbinary_unserialize($this->clipboard);
 
 		/** @var Chunk $chunk */
-		$clipboard->setFullBlocks($this->readBlocks($manager, $clipboard->getWorldMin()));
+		$clipboard->setFullBlocks($this->readBlocks($manager, $clipboard->getWorldMin(), clone $clipboard));
 
 		$this->clipboard = igbinary_serialize($clipboard) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
@@ -107,7 +107,7 @@ abstract class ChunksCopyTask extends AsyncTask{
 	/**
 	 * @phpstan-return array<int, int|null>
 	 */
-	abstract protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos) : array;
+	abstract protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Clipboard $clipboard) : array;
 
 	public function onCompletion() : void{
 		/**

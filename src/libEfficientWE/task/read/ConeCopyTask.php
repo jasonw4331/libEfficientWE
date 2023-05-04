@@ -22,12 +22,7 @@ final class ConeCopyTask extends ChunksCopyTask{
 		parent::__construct($worldId,$chunkX,$chunkZ,$chunk,$adjacentChunks,$clipboard,$onCompletion);
 	}
 
-	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos) : array{
-		/** @var Clipboard $clipboard */
-		$clipboard = igbinary_unserialize($this->clipboard);
-
-		$maxVector = $worldPos->addVector($clipboard->getWorldMax()->subtractVector($clipboard->getWorldMin()));
-
+	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Clipboard $clipboard) : array{
 		/** @var array<int, int|null> $blocks */
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($manager);

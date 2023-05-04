@@ -7,15 +7,12 @@ namespace libEfficientWE\task\write;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\math\Vector3;
-use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
 use function floor;
-use function igbinary_serialize;
-use function igbinary_unserialize;
 use function morton3d_decode;
 
 /**
@@ -23,34 +20,23 @@ use function morton3d_decode;
  */
 final class SphereTask extends ChunksChangeTask{
 
-	private string $worldPos;
-
-	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $worldPos, protected float $radius, bool $fill, bool $replaceAir, \Closure $onCompletion){
-		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $fill, $replaceAir, $onCompletion);
-		$this->worldPos = igbinary_serialize($worldPos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
+	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Vector3 $worldPos, Clipboard $clipboard, protected float $radius, bool $fill, bool $replaceAir, \Closure $onCompletion){
+		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $worldPos, $clipboard, $fill, $replaceAir, $onCompletion);
 	}
 
 	/**
 	 * This method is executed on a worker thread to calculate the changes to the chunk. It is assumed the Clipboard
 	 * already contains the blocks to be set in the chunk, indexed by their Morton code in {@link Sphere::copy()}
 	 */
-	protected function setBlocks(SimpleChunkManager $manager, Clipboard $clipboard) : int{
+	protected function setBlocks(SimpleChunkManager $manager, array $fullBlocks, Vector3 $minVector, Vector3 $maxVector) : int{
 		$changedBlocks = 0;
-		/** @var Vector3 $worldPos */
-		$worldPos = igbinary_unserialize($this->worldPos);
-
-		$worldCenter = $worldPos->add($this->radius, $this->radius, $this->radius);
-		$minX = $worldCenter->x - $this->radius;
-		$minY = $worldCenter->y - $this->radius;
-		$minZ = $worldCenter->z - $this->radius;
-
 		$iterator = new SubChunkExplorer($manager);
 
-		foreach($clipboard->getFullBlocks() as $mortonCode => $fullBlockId){
+		foreach($fullBlocks as $mortonCode => $fullBlockId){
 			[$x, $y, $z] = morton3d_decode($mortonCode);
-			$ax = (int) floor($minX + $x);
-			$ay = (int) floor($minY + $y);
-			$az = (int) floor($minZ + $z);
+			$ax = (int) floor($minVector->x + $x);
+			$ay = (int) floor($minVector->y + $y);
+			$az = (int) floor($minVector->z + $z);
 			if($fullBlockId !== null){
 				// make sure the chunk/block exists on this thread
 				if($iterator->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){

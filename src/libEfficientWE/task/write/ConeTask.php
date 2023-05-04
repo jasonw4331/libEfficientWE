@@ -16,8 +16,6 @@ use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
 use function floor;
-use function igbinary_serialize;
-use function igbinary_unserialize;
 use function morton3d_decode;
 
 /**
@@ -25,41 +23,16 @@ use function morton3d_decode;
  */
 final class ConeTask extends ChunksChangeTask{
 
-	private string $worldPos;
-	private string $centerOfBase;
-
-	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Clipboard $clipboard, Vector3 $worldPos, protected float $radius, protected float $height, Vector3 $centerOfBase, protected int $facing, bool $fill, bool $replaceAir, \Closure $onCompletion){
-		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $fill, $replaceAir, $onCompletion);
-		$this->worldPos = igbinary_serialize($worldPos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
-		$this->centerOfBase = igbinary_serialize($centerOfBase) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
+	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, Vector3 $worldPos, Clipboard $clipboard, protected float $radius, protected float $height, protected int $facing, bool $fill, bool $replaceAir, \Closure $onCompletion){
+		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $worldPos, $clipboard, $fill, $replaceAir, $onCompletion);
 	}
 
 	/**
 	 * This method is executed on a worker thread to calculate the changes to the chunk. It is assumed the Clipboard
 	 * already contains the blocks to be set in the chunk, indexed by their Morton code in {@link Cone::copy()}
 	 */
-	protected function setBlocks(SimpleChunkManager $manager, Clipboard $clipboard) : int{
+	protected function setBlocks(SimpleChunkManager $manager, array $fullBlocks, Vector3 $minVector, Vector3 $maxVector) : int{
 		$changedBlocks = 0;
-		/** @var Vector3 $worldPos */
-		$worldPos = igbinary_unserialize($this->worldPos);
-		/** @var Vector3 $centerOfBase */
-		$centerOfBase = igbinary_unserialize($this->centerOfBase);
-
-		$minVector = match ($this->facing) {
-			Facing::UP => $centerOfBase->subtract($this->radius, 0, $this->radius),
-			Facing::DOWN => $centerOfBase->subtract($this->radius, $this->height, $this->radius),
-			Facing::SOUTH => $centerOfBase->subtract($this->radius, $this->radius, 0),
-			Facing::NORTH => $centerOfBase->subtract($this->radius, $this->radius, $this->height),
-			Facing::EAST => $centerOfBase->subtract(0, $this->radius, $this->radius),
-			Facing::WEST => $centerOfBase->subtract($this->height, $this->radius, $this->radius),
-			default => throw new AssumptionFailedError("Invalid facing: $this->facing")
-		};
-
-		$worldPos = $minVector->addVector($worldPos);
-		$minX = $worldPos->x;
-		$minY = $worldPos->y;
-		$minZ = $worldPos->z;
-
 		$iterator = new SubChunkExplorer($manager);
 
 		$coneTip = match ($this->facing) {
@@ -73,11 +46,11 @@ final class ConeTask extends ChunksChangeTask{
 		};
 		$axisVector = (new Vector3(0, -$this->height, 0))->normalize();
 
-		foreach($clipboard->getFullBlocks() as $mortonCode => $fullBlockId){
+		foreach($fullBlocks as $mortonCode => $fullBlockId){
 			[$x, $y, $z] = morton3d_decode($mortonCode);
-			$ax = (int) floor($minX + $x);
-			$ay = (int) floor($minY + $y);
-			$az = (int) floor($minZ + $z);
+			$ax = (int) floor($minVector->x + $x);
+			$ay = (int) floor($minVector->y + $y);
+			$az = (int) floor($minVector->z + $z);
 			if($fullBlockId !== null){
 				// make sure the chunk/block exists on this thread
 				if($iterator->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){

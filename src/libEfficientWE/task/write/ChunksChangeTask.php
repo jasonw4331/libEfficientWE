@@ -6,6 +6,7 @@ namespace libEfficientWE\task\write;
 
 use libEfficientWE\utils\Clipboard;
 use pocketmine\data\bedrock\BiomeIds;
+use pocketmine\math\Vector3;
 use pocketmine\scheduler\AsyncTask;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\format\BiomeArray;
@@ -30,6 +31,8 @@ abstract class ChunksChangeTask extends AsyncTask{
 
 	protected string $adjacentChunks;
 
+	protected string $worldPos;
+
 	protected string $clipboard;
 
 	private int $changedBlocks = 0;
@@ -46,6 +49,7 @@ abstract class ChunksChangeTask extends AsyncTask{
 		protected int $chunkZ,
 		?Chunk $chunk,
 		array $adjacentChunks,
+		Vector3 $worldPos,
 		Clipboard $clipboard,
 		protected bool $fill,
 		protected bool $replaceAir,
@@ -57,6 +61,8 @@ abstract class ChunksChangeTask extends AsyncTask{
 			fn(?Chunk $c) => $c !== null ? FastChunkSerializer::serializeTerrain($c) : null,
 			$adjacentChunks
 		)) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
+
+		$this->worldPos = igbinary_serialize($worldPos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 
 		$this->clipboard = igbinary_serialize($clipboard) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 
@@ -80,6 +86,9 @@ abstract class ChunksChangeTask extends AsyncTask{
 			$serialChunks
 		);
 
+		/** @var Vector3 $worldPos */
+		$worldPos = igbinary_unserialize($this->worldPos);
+
 		/** @var Clipboard $clipboard */
 		$clipboard = igbinary_unserialize($this->clipboard);
 
@@ -89,7 +98,7 @@ abstract class ChunksChangeTask extends AsyncTask{
 			$this->prepChunkManager($manager, $this->chunkX + $relativeX, $this->chunkZ + $relativeZ, $c);
 		}
 
-		$this->changedBlocks = $this->setBlocks($manager, $clipboard);
+		$this->changedBlocks = $this->setBlocks($manager, $clipboard->getFullBlocks(), $worldPos, $worldPos->addVector($clipboard->getWorldMax()->subtractVector($clipboard->getWorldMin())));
 
 		$this->chunk = FastChunkSerializer::serializeTerrain($chunk);
 
@@ -113,7 +122,10 @@ abstract class ChunksChangeTask extends AsyncTask{
 		}
 	}
 
-	abstract protected function setBlocks(SimpleChunkManager $manager, Clipboard $clipboard) : int;
+	/**
+	 * @phpstan-param array<int, int|null> $fullBlocks
+	 */
+	abstract protected function setBlocks(SimpleChunkManager $manager, array $fullBlocks, Vector3 $minVector, Vector3 $maxVector) : int;
 
 	public function onCompletion() : void{
 		/**
