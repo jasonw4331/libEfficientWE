@@ -23,9 +23,6 @@ final class SphereCopyTask extends ChunksCopyTask{
 		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $onCompletion);
 	}
 
-	/**
-	 * @inheritDoc
-	 */
 	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos) : array{
 		$worldMax = $worldPos->add($this->radius * 2, $this->radius * 2, $this->radius * 2);
 

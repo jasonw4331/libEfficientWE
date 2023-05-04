@@ -175,9 +175,6 @@ class Cone extends Shape{
 		return $resolver->getPromise();
 	}
 
-	/**
-	 * @inheritDoc
-	 */
 	public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();

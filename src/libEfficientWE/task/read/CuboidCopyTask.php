@@ -19,9 +19,6 @@ use function morton3d_encode;
  */
 final class CuboidCopyTask extends ChunksCopyTask{
 
-	/**
-	 * @inheritDoc
-	 */
 	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos) : array{
 		/** @var Clipboard $clipboard */
 		$clipboard = igbinary_unserialize($this->clipboard);
