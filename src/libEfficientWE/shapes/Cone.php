@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
+use libEfficientWE\task\read\ConeCopyTask;
 use libEfficientWE\task\write\ConeTask;
+use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\math\Axis;
 use pocketmine\math\AxisAlignedBB;
@@ -14,17 +16,12 @@ use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\format\Chunk;
-use pocketmine\world\format\SubChunk;
-use pocketmine\world\utils\SubChunkExplorer;
-use pocketmine\world\utils\SubChunkExplorerStatus;
 use pocketmine\world\World;
 use function abs;
 use function array_map;
-use function floor;
 use function max;
 use function microtime;
 use function min;
-use function morton3d_encode;
 
 /**
  * A representation of a cone shape. The facing direction determines the face of the cone's tip. The cone's base is
@@ -135,7 +132,12 @@ class Cone extends Shape{
 		return new self($relativeCenterOfBase, $radius, $height, $facing);
 	}
 
-	public function copy(World $world, Vector3 $worldPos) : void{
+	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
+		$time = microtime(true);
+		$resolver ??= new PromiseResolver();
+
+		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+
 		$maxVector = match ($this->facing) {
 			Facing::UP => $this->centerOfBase->add($this->radius, $this->height, $this->radius),
 			Facing::DOWN => $this->centerOfBase->add($this->radius, 0, $this->radius),
@@ -144,72 +146,33 @@ class Cone extends Shape{
 			Facing::EAST => $this->centerOfBase->add($this->height, $this->radius, $this->radius),
 			Facing::WEST => $this->centerOfBase->add(0, $this->radius, $this->radius),
 		};
-		$minVector = match ($this->facing) {
-			Facing::UP => $this->centerOfBase->subtract($this->radius, 0, $this->radius),
-			Facing::DOWN => $this->centerOfBase->subtract($this->radius, $this->height, $this->radius),
-			Facing::SOUTH => $this->centerOfBase->subtract($this->radius, $this->radius, 0),
-			Facing::NORTH => $this->centerOfBase->subtract($this->radius, $this->radius, $this->height),
-			Facing::EAST => $this->centerOfBase->subtract(0, $this->radius, $this->radius),
-			Facing::WEST => $this->centerOfBase->subtract($this->height, $this->radius, $this->radius),
-		};
 
-		$maxX = $maxVector->x;
-		$maxY = $maxVector->y;
-		$maxZ = $maxVector->z;
+		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
 
-		$minX = $minVector->x;
-		$minY = $minVector->y;
-		$minZ = $minVector->z;
-
-		/** @var array<BlockPosHash, int|null> $blocks */
-		$blocks = [];
-		$subChunkExplorer = new SubChunkExplorer($world);
-
-		$coneTip = match ($this->facing) {
-			Facing::UP => $this->centerOfBase->add(0, $this->height, 0),
-			Facing::DOWN => $this->centerOfBase->subtract(0, $this->height, 0),
-			Facing::SOUTH => $this->centerOfBase->add(0, 0, $this->height),
-			Facing::NORTH => $this->centerOfBase->subtract(0, 0, $this->height),
-			Facing::EAST => $this->centerOfBase->add($this->height, 0, 0),
-			Facing::WEST => $this->centerOfBase->subtract($this->height, 0, 0),
-			default => throw new AssumptionFailedError("Unhandled facing $this->facing")
-		};
-		$axisVector = (new Vector3(0, -$this->height, 0))->normalize();
-
-		// loop from 0 to max. if coordinate is in cone, save fullblockId
-		for($x = 0; $x <= $maxX; ++$x){
-			$ax = (int) floor($minX + $x);
-			for($z = 0; $z <= $maxZ; ++$z){
-				$az = (int) floor($minZ + $z);
-				for($y = 0; $y <= $maxY; ++$y){
-					$ay = (int) floor($minY + $y);
-					// check if coordinate is in cylinder depending on axis
-					$relativePoint = match ($this->facing) {
-						Facing::UP => new Vector3($x, $y, $z),
-						Facing::DOWN => new Vector3($x, $this->height - $y, $z),
-						Facing::SOUTH => new Vector3($x, $z, $y),
-						Facing::NORTH => new Vector3($x, $z, $this->height - $y),
-						Facing::EAST => new Vector3($y, $z, $x),
-						Facing::WEST => new Vector3($this->height - $y, $z, $x),
-						default => throw new AssumptionFailedError("Unhandled facing $this->facing")
-					};
-
-					$relativeVector = $relativePoint->subtractVector($coneTip);
-					$projectionLength = $axisVector->dot($relativeVector);
-					$projection = $axisVector->multiply($projectionLength);
-					$orthogonalVector = $relativeVector->subtractVector($projection);
-					$orthogonalDistance = $orthogonalVector->length();
-					$maxRadiusAtHeight = $projectionLength / $this->height * $this->radius;
-					$inCone = $orthogonalDistance <= $maxRadiusAtHeight;
-
-					if($inCone && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
-						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
-					}
+		$world->getServer()->getAsyncPool()->submitTask(new ConeCopyTask(
+			$world->getId(),
+			$chunkX,
+			$chunkZ,
+			$centerChunk,
+			$adjacentChunks,
+			$this->radius,
+			$this->height,
+			$this->facing,
+			$this->clipboard,
+			static function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
+				if(!parent::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+					$resolver->reject();
+					return;
 				}
-			}
-		}
 
-		$this->clipboard->setFullBlocks($blocks)->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
+				$resolver->resolve([
+					'chunks' => [$centerChunk] + $adjacentChunks,
+					'time' => microtime(true) - $time,
+					'blockCount' => count($clipboard->getFullBlocks()),
+				]);
+			}
+		));
+		return $resolver->getPromise();
 	}
 
 	/**
