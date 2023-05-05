@@ -27,13 +27,14 @@ final class ConeCopyTask extends ChunksCopyTask{
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($manager);
 
+		$maxVector = $worldPos->addVector($clipboard->getWorldMax()->subtractVector($clipboard->getWorldMin()));
 		$coneTip = match ($this->facing) {
-			Facing::UP => $worldPos->add(0, $this->height, 0),
+			Facing::UP => $worldPos->add($this->radius, $this->height, $this->radius),
 			Facing::DOWN => $worldPos->add($this->radius, 0, $this->radius),
-			Facing::SOUTH => $worldPos->add($this->radius, 0, 0),
-			Facing::NORTH => $worldPos->add($this->radius, 0, $this->radius * 2),
-			Facing::EAST => $worldPos->add(0, 0, $this->radius),
-			Facing::WEST => $worldPos->add($this->radius * 2, 0, $this->radius),
+			Facing::SOUTH => $worldPos->add($this->radius, $this->radius, $this->height),
+			Facing::NORTH => $worldPos->add($this->radius, $this->radius, 0),
+			Facing::EAST => $worldPos->add($this->height, $this->radius, $this->radius),
+			Facing::WEST => $worldPos->add(0, $this->radius, $this->radius),
 			default => throw new AssumptionFailedError("Unhandled facing $this->facing")
 		};
 		$axisVector = $coneTip->subtractVector($worldPos)->normalize();

@@ -35,16 +35,24 @@ final class ConeTask extends ChunksChangeTask{
 		$changedBlocks = 0;
 		$iterator = new SubChunkExplorer($manager);
 
-		$coneTip = match ($this->facing) {
-			Facing::UP => $centerOfBase->add(0, $this->height, 0),
-			Facing::DOWN => $centerOfBase->subtract(0, $this->height, 0),
-			Facing::SOUTH => $centerOfBase->add(0, 0, $this->height),
-			Facing::NORTH => $centerOfBase->subtract(0, 0, $this->height),
-			Facing::EAST => $centerOfBase->add($this->height, 0, 0),
-			Facing::WEST => $centerOfBase->subtract($this->height, 0, 0),
+		$coneTip = match($this->facing) {
+			Facing::UP => $minVector->add($this->radius, $this->height, $this->radius),
+			Facing::DOWN => $minVector->add($this->radius, 0, $this->radius),
+			Facing::SOUTH => $minVector->add($this->radius, $this->radius, $this->height),
+			Facing::NORTH => $minVector->add($this->radius, $this->radius, 0),
+			Facing::EAST => $minVector->add($this->height, $this->radius, $this->radius),
+			Facing::WEST => $minVector->add(0, $this->radius, $this->radius),
 			default => throw new AssumptionFailedError("Unhandled facing $this->facing")
 		};
-		$axisVector = (new Vector3(0, -$this->height, 0))->normalize();
+		$axisVector = $coneTip->subtractVector(match($this->facing) {
+			Facing::UP => new Vector3($this->radius, 0, $this->radius),
+			Facing::DOWN => new Vector3($this->radius, $this->height, $this->radius),
+			Facing::SOUTH => new Vector3($this->radius, $this->radius, 0),
+			Facing::NORTH => new Vector3($this->radius, $this->radius, $this->height),
+			Facing::EAST => new Vector3(0, $this->radius, $this->radius),
+			Facing::WEST => new Vector3($this->height, $this->radius, $this->radius),
+			default => throw new AssumptionFailedError("Unhandled facing $this->facing")
+		})->normalize();
 
 		foreach($fullBlocks as $mortonCode => $fullBlockId){
 			[$x, $y, $z] = morton3d_decode($mortonCode);
