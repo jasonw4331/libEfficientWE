@@ -36,6 +36,12 @@ final class CylinderTask extends ChunksChangeTask{
 		$changedBlocks = 0;
 		$iterator = new SubChunkExplorer($manager);
 
+		$center2D = match($this->axis) {
+			Axis::Y => new Vector2($minVector->x + $this->radius, $minVector->z + $this->radius),
+			Axis::X => new Vector2($minVector->y + $this->radius, $minVector->z + $this->radius),
+			Axis::Z => new Vector2($minVector->x + $this->radius, $minVector->y + $this->radius),
+		};
+
 		foreach($fullBlocks as $mortonCode => $fullBlockId){
 			[$x, $y, $z] = morton3d_decode($mortonCode);
 			$ax = (int) floor($minVector->x + $x);
@@ -48,9 +54,9 @@ final class CylinderTask extends ChunksChangeTask{
 					if($this->replaceAir || $fullBlockId !== VanillaBlocks::AIR()->getFullId()){
 						// if fill is false, ignore interior blocks on the clipboard
 						$edgeOfCylinder = match ($this->axis) {
-							Axis::Y => (new Vector2($minVector->x, $minVector->z))->distanceSquared(new Vector2($ax, $az)) >= $this->radius ** 2 && $y <= $this->height,
-							Axis::X => (new Vector2($minVector->y, $minVector->z))->distanceSquared(new Vector2($ay, $az)) >= $this->radius ** 2 && $x <= $this->height,
-							Axis::Z => (new Vector2($minVector->x, $minVector->y))->distanceSquared(new Vector2($ax, $ay)) >= $this->radius ** 2 && $z <= $this->height,
+							Axis::Y => $center2D->distanceSquared(new Vector2($ax, $az)) >= $this->radius ** 2 && $y <= $this->height,
+							Axis::X => $center2D->distanceSquared(new Vector2($ay, $az)) >= $this->radius ** 2 && $x <= $this->height,
+							Axis::Z => $center2D->distanceSquared(new Vector2($ax, $ay)) >= $this->radius ** 2 && $z <= $this->height,
 							default => throw new AssumptionFailedError("Invalid axis $this->axis")
 						};
 						if($this->fill || $edgeOfCylinder){
