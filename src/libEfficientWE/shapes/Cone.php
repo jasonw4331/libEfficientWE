@@ -35,6 +35,9 @@ class Cone extends Shape{
 
 	protected float $radius;
 
+	/**
+	 * @phpstan-param Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
+	 */
 	private function __construct(protected Vector3 $centerOfBase, float $radius, protected float $height, protected int $facing){
 		$this->radius = abs($radius);
 		parent::__construct(null);
@@ -59,6 +62,7 @@ class Cone extends Shape{
 	/**
 	 * Returns the largest {@link Cone} object which fits between the given {@link Vector3} objects. The cone's tip
 	 * will be the difference between the two given {@link Vector3} objects for a given {@link Facing} direction.
+	 * @phpstan-param Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
 	 */
 	public static function fromVector3(Vector3 $min, Vector3 $max, int $facing = Facing::UP) : Shape{
 		$minX = min($min->x, $max->x);
@@ -99,6 +103,7 @@ class Cone extends Shape{
 	/**
 	 * Returns the largest {@link Cone} object which fits within the given {@link AxisAlignedBB} object. The cone's
 	 * tip will be at the center of the given {@link AxisAlignedBB} object for a given {@link Facing} direction.
+	 * @phpstan-param Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
 	 */
 	public static function fromAABB(AxisAlignedBB $alignedBB, int $facing = Facing::UP) : Shape{
 		$minX = min($alignedBB->minX, $alignedBB->maxX);
