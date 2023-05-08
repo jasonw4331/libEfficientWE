@@ -18,6 +18,7 @@ use pocketmine\world\World;
 use function array_map;
 use function igbinary_serialize;
 use function igbinary_unserialize;
+use function morton2d_decode;
 
 /**
  * @internal
@@ -35,7 +36,7 @@ abstract class ChunksCopyTask extends AsyncTask{
 
 	/**
 	 * @phpstan-param array<int, Chunk|null> $chunks
-	 * @phpstan-param OnCompletion                    $onCompletion
+	 * @phpstan-param OnCompletion           $onCompletion
 	 */
 	public function __construct(
 		protected int $worldId,

@@ -14,11 +14,15 @@ use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
 use pocketmine\world\World;
 use function abs;
+use function array_filter;
+use function array_keys;
 use function array_map;
 use function count;
 use function max;
 use function microtime;
 use function min;
+use function morton3d_decode;
+use const ARRAY_FILTER_USE_KEY;
 
 /**
  * A representation of a sphere shape.
@@ -102,7 +106,7 @@ class Sphere extends Shape{
 		[$temporaryChunkLoader, $chunkPopulationLockId, $chunks] = $this->prepWorld($world);
 
 		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
-			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) : bool {
+			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) : bool{
 				[$x, $y, $z] = morton3d_decode($mortonCode);
 				return $x * $x + $y * $y + $z * $z === $this->radius ** 2;
 			}, ARRAY_FILTER_USE_KEY);

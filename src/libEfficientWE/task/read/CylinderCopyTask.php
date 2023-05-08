@@ -18,7 +18,7 @@ use function morton3d_encode;
 
 class CylinderCopyTask extends ChunksCopyTask{
 
-	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, protected float $height, protected int $axis, \Closure $onCompletion) {
+	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, protected float $height, protected int $axis, \Closure $onCompletion){
 		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
 
@@ -28,7 +28,7 @@ class CylinderCopyTask extends ChunksCopyTask{
 		$subChunkExplorer = new SubChunkExplorer($manager);
 
 		$maxVector = $worldPos->addVector($clipboard->getWorldMax()->subtractVector($clipboard->getWorldMin()));
-		$centerOfBase = match($this->axis) {
+		$centerOfBase = match ($this->axis) {
 			Axis::Y => $worldPos->add($this->radius, 0, $this->radius),
 			Axis::X => $worldPos->add(0, $this->radius, $this->radius),
 			Axis::Z => $worldPos->add($this->radius, $this->radius, 0),

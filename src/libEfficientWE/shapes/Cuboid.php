@@ -13,10 +13,15 @@ use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
 use pocketmine\world\World;
+use function array_filter;
+use function array_keys;
 use function array_map;
+use function count;
 use function max;
 use function microtime;
 use function min;
+use function morton3d_decode;
+use const ARRAY_FILTER_USE_KEY;
 
 /**
  * A representation of a cuboid shape.
@@ -108,8 +113,8 @@ class Cuboid extends Shape{
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
-			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) : bool {
-			[$x, $y, $z] = morton3d_decode($mortonCode);
+			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) : bool{
+				[$x, $y, $z] = morton3d_decode($mortonCode);
 				return $x === 0 || $x === $this->highCorner->x ||
 					$y === 0 || $y === $this->highCorner->y ||
 					$z === 0 || $z === $this->highCorner->z;

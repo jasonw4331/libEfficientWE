@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace libEfficientWE\task\read;
@@ -11,13 +12,15 @@ use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
+use function floor;
+use function morton3d_encode;
 
 /**
  * @internal
  */
 final class ConeCopyTask extends ChunksCopyTask{
 
-	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, protected float $height, protected int $facing, \Closure $onCompletion) {
+	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, protected float $height, protected int $facing, \Closure $onCompletion){
 		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
 

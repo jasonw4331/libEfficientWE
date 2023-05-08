@@ -16,11 +16,15 @@ use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
 use pocketmine\world\World;
 use function abs;
+use function array_filter;
+use function array_keys;
 use function array_map;
 use function count;
 use function max;
 use function microtime;
 use function min;
+use function morton3d_decode;
+use const ARRAY_FILTER_USE_KEY;
 
 /**
  * A representation of a cylinder shape. The default axis is {@link Axis::Y}, making the cylinder base at its lowest coordinate, but it can be
@@ -168,9 +172,9 @@ class Cylinder extends Shape{
 		[$temporaryChunkLoader, $chunkPopulationLockId, $chunks] = $this->prepWorld($world);
 
 		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
-			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) : bool {
+			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) : bool{
 				[$x, $y, $z] = morton3d_decode($mortonCode);
-				return match($this->axis) {
+				return match ($this->axis) {
 					Axis::Y => $y === 0 || $y === $this->height || (new Vector2($x + $this->radius, $z + $this->radius))->distanceSquared(new Vector2($x, $z)) <= $this->radius ** 2,
 					Axis::X => $x === 0 || $x === $this->height || (new Vector2($y + $this->radius, $z + $this->radius))->distanceSquared(new Vector2($y, $z)) <= $this->radius ** 2,
 					Axis::Z => $z === 0 || $z === $this->height || (new Vector2($x + $this->radius, $y + $this->radius))->distanceSquared(new Vector2($x, $y)) <= $this->radius ** 2,

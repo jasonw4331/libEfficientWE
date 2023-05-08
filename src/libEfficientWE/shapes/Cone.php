@@ -189,7 +189,7 @@ class Cone extends Shape{
 
 		[$temporaryChunkLoader, $chunkPopulationLockId, $chunks] = $this->prepWorld($world);
 
-		$coneTip = match($this->facing) {
+		$coneTip = match ($this->facing) {
 			Facing::UP => new Vector3($this->radius, $this->height, $this->radius),
 			Facing::DOWN => new Vector3($this->radius, 0, $this->radius),
 			Facing::SOUTH => new Vector3($this->radius, $this->radius, $this->height),
@@ -197,7 +197,7 @@ class Cone extends Shape{
 			Facing::EAST => new Vector3($this->height, $this->radius, $this->radius),
 			Facing::WEST => new Vector3(0, $this->radius, $this->radius)
 		};
-		$axisVector = $coneTip->subtractVector(match($this->facing) {
+		$axisVector = $coneTip->subtractVector(match ($this->facing) {
 			Facing::UP => new Vector3($this->radius, 0, $this->radius),
 			Facing::DOWN => new Vector3($this->radius, $this->height, $this->radius),
 			Facing::SOUTH => new Vector3($this->radius, $this->radius, 0),
@@ -207,7 +207,7 @@ class Cone extends Shape{
 		})->normalize();
 
 		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
-			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) use($coneTip, $axisVector) : bool {
+			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) use ($coneTip, $axisVector) : bool{
 				[$x, $y, $z] = morton3d_decode($mortonCode);
 				$relativeVector = (new Vector3($x, $y, $z))->subtractVector($coneTip);
 				$projectionLength = $axisVector->dot($relativeVector);

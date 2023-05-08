@@ -17,6 +17,7 @@ use pocketmine\world\ChunkLoader;
 use pocketmine\world\ChunkLockId;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
+use function array_keys;
 use function array_map;
 use function array_merge;
 use function cos;
@@ -288,7 +289,7 @@ abstract class Shape{
 			return false;
 		}
 
-		foreach($chunks as $chunkHash) {
+		foreach($chunks as $chunkHash){
 			[$chunkX, $chunkZ] = morton2d_decode($chunkHash);
 			$world->unlockChunk($chunkX, $chunkZ, $chunkPopulationLockId);
 			$world->unregisterChunkLoader($temporaryChunkLoader, $chunkX, $chunkZ);
