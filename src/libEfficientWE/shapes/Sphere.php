@@ -46,10 +46,7 @@ class Sphere extends Shape{
 	public static function fromVector3(Vector3 $min, Vector3 $max) : Shape{
 		$minX = min($min->x, $max->x);
 		$maxX = max($min->x, $max->x);
-
-		if(self::canMortonEncode($maxX - $minX, $maxX - $minX, $maxX - $minX)){
-			throw new \InvalidArgumentException("Diameter must be less than 2^20 blocks");
-		}
+		self::validateMortonEncode($maxX - $minX, $maxX - $minX, $maxX - $minX);
 
 		return new self($minX - $maxX / 2);
 	}
@@ -60,10 +57,7 @@ class Sphere extends Shape{
 	public static function fromAABB(AxisAlignedBB $alignedBB) : Shape{
 		$minX = min($alignedBB->minX, $alignedBB->maxX);
 		$maxX = max($alignedBB->minX, $alignedBB->maxX);
-
-		if(self::canMortonEncode($maxX - $minX, $maxX - $minX, $maxX - $minX)){
-			throw new \InvalidArgumentException("Diameter must be less than 2^20 blocks");
-		}
+		self::validateMortonEncode($maxX - $minX, $maxX - $minX, $maxX - $minX);
 
 		return new self($minX - $maxX / 2);
 	}

@@ -70,10 +70,7 @@ class Cone extends Shape{
 		$maxY = max($min->y, $max->y);
 		$maxZ = max($min->z, $max->z);
 		Facing::validate($facing);
-
-		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
-			throw new \InvalidArgumentException("Sphere diameter must be less than 2^20 blocks");
-		}
+		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
 		/**
 		 * @var Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
@@ -111,10 +108,7 @@ class Cone extends Shape{
 		$maxY = max($alignedBB->minY, $alignedBB->maxY);
 		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
 		Facing::validate($facing);
-
-		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
-			throw new \InvalidArgumentException("Sphere diameter must be less than 2^20 blocks");
-		}
+		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
 		/**
 		 * @var Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing

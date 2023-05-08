@@ -56,8 +56,9 @@ abstract class Shape{
 
 	abstract public static function fromAABB(AxisAlignedBB $alignedBB) : self;
 
-	public static function canMortonEncode(float $xDiff, float $yDiff, float $zDiff) : bool{
-		return $xDiff < self::MORTON_BITS && $yDiff < self::MORTON_BITS && $zDiff < self::MORTON_BITS;
+	public static function validateMortonEncode(float $xDiff, float $yDiff, float $zDiff) : void{
+		if($xDiff < self::MORTON_BITS && $yDiff < self::MORTON_BITS && $zDiff < self::MORTON_BITS)
+			throw new \InvalidArgumentException("All axis lengths must be less than 2^20 blocks");
 	}
 
 	/**

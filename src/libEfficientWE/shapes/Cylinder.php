@@ -72,10 +72,7 @@ class Cylinder extends Shape{
 		if($axis !== Axis::X && $axis !== Axis::Y && $axis !== Axis::Z){
 			throw new \InvalidArgumentException("Axis must be one of Axis::X, Axis::Y or Axis::Z");
 		}
-
-		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
-			throw new \InvalidArgumentException("Diameter and axis lengths must be less than 2^20 blocks");
-		}
+		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
 		[$radius, $height] = match ($axis) {
 			Axis::Y => [min($maxX - $minX, $maxZ - $minZ) / 2, $maxY - $minY],
@@ -105,10 +102,7 @@ class Cylinder extends Shape{
 		if($axis !== Axis::X && $axis !== Axis::Y && $axis !== Axis::Z){
 			throw new \InvalidArgumentException("Axis must be one of Axis::X, Axis::Y or Axis::Z");
 		}
-
-		if(self::canMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ)){
-			throw new \InvalidArgumentException("Diameter and axis lengths must be less than 2^20 blocks");
-		}
+		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
 		[$radius, $height] = match ($axis) {
 			Axis::Y => [min($maxX - $minX, $maxZ - $minZ) / 2, $maxY - $minY],
