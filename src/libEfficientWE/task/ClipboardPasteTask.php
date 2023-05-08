@@ -18,8 +18,11 @@ use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
 use function array_map;
+use function floor;
 use function igbinary_serialize;
 use function igbinary_unserialize;
+use function morton2d_decode;
+use function morton3d_decode;
 
 /**
  * @internal
