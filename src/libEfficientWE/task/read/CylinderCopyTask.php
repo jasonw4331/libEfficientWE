@@ -22,12 +22,11 @@ class CylinderCopyTask extends ChunksCopyTask{
 		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
 
-	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Clipboard $clipboard) : array{
+	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Vector3 $worldMaxPos) : array{
 		/** @var array<int, int|null> $blocks */
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($manager);
 
-		$maxVector = $worldPos->addVector($clipboard->getWorldMax()->subtractVector($clipboard->getWorldMin()));
 		$centerOfBase = match ($this->axis) {
 			Axis::Y => $worldPos->add($this->radius, 0, $this->radius),
 			Axis::X => $worldPos->add(0, $this->radius, $this->radius),
@@ -35,12 +34,12 @@ class CylinderCopyTask extends ChunksCopyTask{
 			default => throw new AssumptionFailedError("Invalid axis $this->axis")
 		};
 
-		// loop from min to max if coordinate is in cylinder, save fullblockId
-		for($x = 0; $x <= $maxVector->x; ++$x){
+		// loop from min to max. if coordinate is in cylinder, save fullblockId
+		for($x = 0; $x <= $worldMaxPos->x; ++$x){
 			$ax = (int) floor($worldPos->x + $x);
-			for($z = 0; $z <= $maxVector->z; ++$z){
+			for($z = 0; $z <= $worldMaxPos->z; ++$z){
 				$az = (int) floor($worldPos->z + $z);
-				for($y = 0; $y <= $maxVector->y; ++$y){
+				for($y = 0; $y <= $worldMaxPos->y; ++$y){
 					$ay = (int) floor($worldPos->y + $y);
 					// check if coordinate is in cylinder depending on axis
 					$inCylinder = match ($this->axis) {

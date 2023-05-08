@@ -24,12 +24,11 @@ final class ConeCopyTask extends ChunksCopyTask{
 		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
 
-	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Clipboard $clipboard) : array{
+	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Vector3 $worldMaxPos) : array{
 		/** @var array<int, int|null> $blocks */
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($manager);
 
-		$maxVector = $worldPos->addVector($clipboard->getWorldMax()->subtractVector($clipboard->getWorldMin()));
 		$coneTip = match ($this->facing) {
 			Facing::UP => $worldPos->add($this->radius, $this->height, $this->radius),
 			Facing::DOWN => $worldPos->add($this->radius, 0, $this->radius),
@@ -42,11 +41,11 @@ final class ConeCopyTask extends ChunksCopyTask{
 		$axisVector = $coneTip->subtractVector($worldPos)->normalize();
 
 		// loop from 0 to max. if coordinate is in cone, save fullblockId
-		for($x = 0; $x <= $maxVector->x; ++$x){
+		for($x = 0; $x <= $worldMaxPos->x; ++$x){
 			$ax = (int) floor($worldPos->x + $x);
-			for($z = 0; $z <= $maxVector->z; ++$z){
+			for($z = 0; $z <= $worldMaxPos->z; ++$z){
 				$az = (int) floor($worldPos->z + $z);
-				for($y = 0; $y <= $maxVector->y; ++$y){
+				for($y = 0; $y <= $worldMaxPos->y; ++$y){
 					$ay = (int) floor($worldPos->y + $y);
 					// check if coordinate is in cylinder depending on axis
 					$relativePoint = new Vector3($x, $y, $z);

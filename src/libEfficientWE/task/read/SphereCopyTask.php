@@ -22,20 +22,19 @@ final class SphereCopyTask extends ChunksCopyTask{
 		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
 
-	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Clipboard $clipboard) : array{
+	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Vector3 $worldMaxPos) : array{
 		/** @var array<int, int|null> $blocks */
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($manager);
 
-		$maxVector = $worldPos->addVector($clipboard->getWorldMax()->subtractVector($clipboard->getWorldMin()));
 		$center = new Vector3($this->radius, $this->radius, $this->radius);
 
 		// loop from 0 to max. if coordinate is in sphere, save fullblockId
-		for($x = 0; $x <= $maxVector->x; ++$x){
+		for($x = 0; $x <= $worldMaxPos->x; ++$x){
 			$ax = (int) floor($worldPos->x + $x);
-			for($z = 0; $z <= $maxVector->z; ++$z){
+			for($z = 0; $z <= $worldMaxPos->z; ++$z){
 				$az = (int) floor($worldPos->z + $z);
-				for($y = 0; $y <= $maxVector->y; ++$y){
+				for($y = 0; $y <= $worldMaxPos->y; ++$y){
 					$ay = (int) floor($worldPos->y + $y);
 					if($center->distanceSquared(new Vector3($x, $y, $z)) <= $this->radius ** 2 && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
