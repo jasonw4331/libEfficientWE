@@ -6,7 +6,6 @@ namespace libEfficientWE\task\read;
 
 use libEfficientWE\utils\Clipboard;
 use pocketmine\math\Vector3;
-use pocketmine\world\format\Chunk;
 use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
@@ -19,8 +18,8 @@ use function morton3d_encode;
  */
 final class SphereCopyTask extends ChunksCopyTask{
 
-	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, protected float $radius, Clipboard $clipboard, \Closure $onCompletion){
-		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $onCompletion);
+	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, \Closure $onCompletion){
+		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
 
 	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Clipboard $clipboard) : array{
