@@ -65,21 +65,17 @@ class Cylinder extends Shape{
 			throw new \InvalidArgumentException("Diameter and axis lengths must be less than 2^20 blocks");
 		}
 
-		$relativeCenterOfBase = (match ($axis) {
-			Axis::Y => new Vector3($minX + $maxX / 2, $minY, $minZ + $maxZ / 2),
-			Axis::X => new Vector3($minX, $minY + $maxY / 2, $minZ + $maxZ / 2),
-			Axis::Z => new Vector3($minX + $maxX / 2, $minY + $maxY / 2, $minZ)
-		})->subtract($minX, $minY, $minZ);
-		$radius = match ($axis) {
-			Axis::Y => min($maxX - $minX, $maxZ - $minZ) / 2,
-			Axis::X => min($maxY - $minY, $maxZ - $minZ) / 2,
-			Axis::Z => min($maxX - $minX, $maxY - $minY) / 2
+		[$radius, $height] = match ($axis) {
+			Axis::Y => [min($maxX - $minX, $maxZ - $minZ) / 2, $maxY - $minY],
+			Axis::X => [min($maxY - $minY, $maxZ - $minZ) / 2, $maxX - $minX],
+			Axis::Z => [min($maxX - $minX, $maxY - $minY) / 2, $maxZ - $minZ]
 		};
-		$height = match ($axis) {
-			Axis::Y => $maxY - $minY,
-			Axis::X => $maxX - $minX,
-			Axis::Z => $maxZ - $minZ
+		$relativeCenterOfBase = match ($axis) {
+			Axis::Y => new Vector3($radius, 0, $radius),
+			Axis::X => new Vector3(0, $radius, $radius),
+			Axis::Z => new Vector3($radius, $radius, 0)
 		};
+
 		return new self($relativeCenterOfBase, $radius, $height, $axis);
 	}
 
@@ -98,21 +94,17 @@ class Cylinder extends Shape{
 			throw new \InvalidArgumentException("Diameter and axis lengths must be less than 2^20 blocks");
 		}
 
-		$relativeCenterOfBase = (match ($axis) {
-			Axis::Y => new Vector3($minX + $maxX / 2, $minY, $minZ + $maxZ / 2),
-			Axis::X => new Vector3($minX, $minY + $maxY / 2, $minZ + $maxZ / 2),
-			Axis::Z => new Vector3($minX + $maxX / 2, $minY + $maxY / 2, $minZ)
-		})->subtract($minX, $minY, $minZ);
-		$radius = match ($axis) {
-			Axis::Y => min($maxX - $minX, $maxZ - $minZ) / 2,
-			Axis::X => min($maxY - $minY, $maxZ - $minZ) / 2,
-			Axis::Z => min($maxX - $minX, $maxY - $minY) / 2
+		[$radius, $height] = match ($axis) {
+			Axis::Y => [min($maxX - $minX, $maxZ - $minZ) / 2, $maxY - $minY],
+			Axis::X => [min($maxY - $minY, $maxZ - $minZ) / 2, $maxX - $minX],
+			Axis::Z => [min($maxX - $minX, $maxY - $minY) / 2, $maxZ - $minZ]
 		};
-		$height = match ($axis) {
-			Axis::Y => $maxY - $minY,
-			Axis::X => $maxX - $minX,
-			Axis::Z => $maxZ - $minZ
+		$relativeCenterOfBase = match ($axis) {
+			Axis::Y => new Vector3($radius, 0, $radius),
+			Axis::X => new Vector3(0, $radius, $radius),
+			Axis::Z => new Vector3($radius, $radius, 0)
 		};
+
 		return new self($relativeCenterOfBase, $radius, $height, $axis);
 	}
 
