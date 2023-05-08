@@ -11,7 +11,7 @@ final class Clipboard{
 	/** @phpstan-var array<int, int|null> $fullBlocks */
 	private array $fullBlocks = [];
 	private ?Vector3 $worldMin;
-	private ?Vector3 $worldMax = null;
+	private ?Vector3 $worldMax;
 
 	/**
 	 * @phpstan-return array<int, int|null>
