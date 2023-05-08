@@ -81,12 +81,12 @@ class Sphere extends Shape{
 					return;
 				}
 
-				$this->clipboard->setFullBlocks($clipboard->getFullBlocks());
+				$this->clipboard->setBlockStateIds($clipboard->getBlockStateIds());
 
 				$resolver->resolve([
 					'chunks' => $chunks,
 					'time' => microtime(true) - $time,
-					'blockCount' => count($clipboard->getFullBlocks()),
+					'blockCount' => count($clipboard->getBlockStateIds()),
 				]);
 			}
 		));
@@ -99,18 +99,18 @@ class Sphere extends Shape{
 
 		[$temporaryChunkLoader, $chunkPopulationLockId, $chunks] = $this->prepWorld($world);
 
-		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
-			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) : bool{
+		$blockStateIds = $fill ? $this->clipboard->getBlockStateIds() :
+			array_filter($this->clipboard->getBlockStateIds(), function(int $mortonCode) : bool{
 				[$x, $y, $z] = morton3d_decode($mortonCode);
 				return $x * $x + $y * $y + $z * $z === $this->radius ** 2;
 			}, ARRAY_FILTER_USE_KEY);
-		$fullBlocks = array_map(static fn(?int $fullBlock) => $block->getFullId(), $fullBlocks);
+		$blockStateIds = array_map(static fn(?int $blockStateId) => $block->getStateId(), $blockStateIds);
 
 		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard->getWorldMin(),
-			$fullBlocks,
+			$blockStateIds,
 			true,
 			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
 				if(!static::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkPopulationLockId)){

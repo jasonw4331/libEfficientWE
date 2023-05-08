@@ -49,7 +49,7 @@ abstract class Shape{
 	 * @phpstan-return array<int, int|null>
 	 */
 	public function getClipboardBlocks() : array{
-		return $this->clipboard->getFullBlocks();
+		return $this->clipboard->getBlockStateIds();
 	}
 
 	abstract public static function fromVector3(Vector3 $min, Vector3 $max) : self;
@@ -73,7 +73,7 @@ abstract class Shape{
 		$totalledResolver = new PromiseResolver();
 
 		$this->copy($world, $worldPos)->onCompletion(
-			function(array $value) use ($world, $totalledResolver) : void{
+			function() use ($world, $totalledResolver) : void{
 				$this->set($world, VanillaBlocks::AIR(), true, $totalledResolver);
 			},
 			static fn() => $resolver->reject()
@@ -106,7 +106,7 @@ abstract class Shape{
 			$world->getId(),
 			$chunks,
 			$worldPos,
-			$this->clipboard->getFullBlocks(),
+			$this->clipboard->getBlockStateIds(),
 			$replaceAir,
 			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
 				if(!self::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
@@ -144,7 +144,7 @@ abstract class Shape{
 			$world->getId(),
 			$chunks,
 			$this->clipboard->getWorldMin(),
-			array_map(static fn(?int $fullBlock) => $fullBlock === $find->getFullId() ? $replace->getFullId() : $fullBlock, $this->clipboard->getFullBlocks()),
+			array_map(static fn(?int $blockStateId) => $blockStateId === $find->getStateId() ? $replace->getStateId() : $blockStateId, $this->clipboard->getBlockStateIds()),
 			true,
 			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
 				if(!self::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
@@ -186,7 +186,7 @@ abstract class Shape{
 				$pos = Vector3::zero();
 
 				$newBlocks = [];
-				foreach($this->clipboard->getFullBlocks() as $mortonCode => $block){
+				foreach($this->clipboard->getBlockStateIds() as $mortonCode => $block){
 					[$x, $y, $z] = morton3d_decode($mortonCode);
 
 					$pos->x = $x - $relativeCenter->x;
@@ -213,7 +213,7 @@ abstract class Shape{
 
 					$newBlocks[morton3d_encode((int) $pos->x, (int) $pos->y, (int) $pos->z)] = $block;
 				}
-				$this->clipboard->setFullBlocks($newBlocks);
+				$this->clipboard->setBlockStateIds($newBlocks);
 
 				$this->paste($world, $worldPos, $replaceAir, $totalledResolver);
 			},

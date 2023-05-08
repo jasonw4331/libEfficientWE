@@ -164,12 +164,12 @@ class Cone extends Shape{
 					return;
 				}
 
-				$this->clipboard->setFullBlocks($clipboard->getFullBlocks());
+				$this->clipboard->setBlockStateIds($clipboard->getBlockStateIds());
 
 				$resolver->resolve([
 					'chunks' => $chunks,
 					'time' => microtime(true) - $time,
-					'blockCount' => count($clipboard->getFullBlocks()),
+					'blockCount' => count($clipboard->getBlockStateIds()),
 				]);
 			}
 		));
@@ -199,8 +199,8 @@ class Cone extends Shape{
 			Facing::WEST => new Vector3($this->height, $this->radius, $this->radius)
 		})->normalize();
 
-		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
-			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) use ($coneTip, $axisVector) : bool{
+		$blockStateIds = $fill ? $this->clipboard->getBlockStateIds() :
+			array_filter($this->clipboard->getBlockStateIds(), function(int $mortonCode) use ($coneTip, $axisVector) : bool{
 				[$x, $y, $z] = morton3d_decode($mortonCode);
 				$relativeVector = (new Vector3($x, $y, $z))->subtractVector($coneTip);
 				$projectionLength = $axisVector->dot($relativeVector);
@@ -210,13 +210,13 @@ class Cone extends Shape{
 				$maxRadiusAtHeight = $projectionLength / $this->height * $this->radius;
 				return $orthogonalDistance >= $maxRadiusAtHeight;
 			}, ARRAY_FILTER_USE_KEY);
-		$fullBlocks = array_map(static fn(?int $fullBlock) => $fullBlock === null ? null : $block->getFullId(), $fullBlocks);
+		$blockStateIds = array_map(static fn(?int $blockStateId) => $blockStateId === null ? null : $block->getStateId(), $blockStateIds);
 
 		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard->getWorldMin(),
-			$fullBlocks,
+			$blockStateIds,
 			true,
 			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
 				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkPopulationLockId)){

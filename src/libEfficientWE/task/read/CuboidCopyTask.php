@@ -29,7 +29,7 @@ final class CuboidCopyTask extends ChunksCopyTask{
 				for($y = 0; $y <= $worldMaxPos->y; ++$y){
 					$ay = (int) floor($worldPos->y + $y);
 					if($subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
-						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
+						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getBlockStateId($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
 				}
 			}

@@ -6,11 +6,9 @@ namespace libEfficientWE\task;
 
 use Closure;
 use pocketmine\block\VanillaBlocks;
-use pocketmine\data\bedrock\BiomeIds;
 use pocketmine\math\Vector3;
 use pocketmine\scheduler\AsyncTask;
 use pocketmine\utils\AssumptionFailedError;
-use pocketmine\world\format\BiomeArray;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\format\io\FastChunkSerializer;
 use pocketmine\world\format\SubChunk;
@@ -40,14 +38,14 @@ final class ClipboardPasteTask extends AsyncTask{
 
 	/**
 	 * @phpstan-param array<int, Chunk|null> $chunks
-	 * @phpstan-param array<int, int|null>   $fullBlocks
+	 * @phpstan-param array<int, int|null>   $blockStateIds
 	 * @phpstan-param OnCompletion           $onCompletion
 	 */
 	public function __construct(
 		protected int $worldId,
 		array $chunks,
 		Vector3 $worldPos,
-		protected array $fullBlocks,
+		protected array $blockStateIds,
 		protected bool $replaceAir,
 		Closure $onCompletion
 	){
@@ -86,17 +84,17 @@ final class ClipboardPasteTask extends AsyncTask{
 
 		$iterator = new SubChunkExplorer($manager);
 
-		foreach($this->fullBlocks as $mortonCode => $fullBlockId){
+		foreach($this->blockStateIds as $mortonCode => $blockStateId){
 			[$x, $y, $z] = morton3d_decode($mortonCode);
 			$ax = (int) floor($worldPos->x + $x);
 			$ay = (int) floor($worldPos->y + $y);
 			$az = (int) floor($worldPos->z + $z);
-			if($fullBlockId !== null){
+			if($blockStateId !== null){
 				// make sure the chunk/block exists on this thread
 				if($iterator->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 					// if replaceAir is false, do not set blocks where the clipboard has air
-					if($this->replaceAir || $fullBlockId !== VanillaBlocks::AIR()->getFullId()){
-						$iterator->currentSubChunk?->setFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK, $fullBlockId);
+					if($this->replaceAir || $blockStateId !== VanillaBlocks::AIR()->getStateId()){
+						$iterator->currentSubChunk?->setBlockStateId($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK, $blockStateId);
 						++$this->changedBlocks;
 					}
 				}
@@ -113,7 +111,7 @@ final class ClipboardPasteTask extends AsyncTask{
 	}
 
 	private function prepChunkManager(SimpleChunkManager $manager, int $chunkX, int $chunkZ, ?Chunk &$chunk) : void{
-		$manager->setChunk($chunkX, $chunkZ, $chunk ?? new Chunk([], BiomeArray::fill(BiomeIds::OCEAN), false));
+		$manager->setChunk($chunkX, $chunkZ, $chunk ?? new Chunk([], false));
 		if($chunk === null){
 			$chunk = $manager->getChunk($chunkX, $chunkZ);
 			if($chunk === null){

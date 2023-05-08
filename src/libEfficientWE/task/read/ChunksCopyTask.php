@@ -6,11 +6,9 @@ namespace libEfficientWE\task\read;
 
 use Closure;
 use libEfficientWE\utils\Clipboard;
-use pocketmine\data\bedrock\BiomeIds;
 use pocketmine\math\Vector3;
 use pocketmine\scheduler\AsyncTask;
 use pocketmine\utils\AssumptionFailedError;
-use pocketmine\world\format\BiomeArray;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\format\io\FastChunkSerializer;
 use pocketmine\world\generator\ThreadLocalGeneratorContext;
@@ -77,13 +75,13 @@ abstract class ChunksCopyTask extends AsyncTask{
 		/** @var Clipboard $clipboard */
 		$clipboard = igbinary_unserialize($this->clipboard);
 
-		$clipboard->setFullBlocks($this->readBlocks($manager, $clipboard->getWorldMin(), $clipboard->getWorldMax()));
+		$clipboard->setBlockStateIds($this->readBlocks($manager, $clipboard->getWorldMin(), $clipboard->getWorldMax()));
 
 		$this->clipboard = igbinary_serialize($clipboard) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
 
 	private function prepChunkManager(SimpleChunkManager $manager, int $chunkX, int $chunkZ, ?Chunk &$chunk) : void{
-		$manager->setChunk($chunkX, $chunkZ, $chunk ?? new Chunk([], BiomeArray::fill(BiomeIds::OCEAN), false));
+		$manager->setChunk($chunkX, $chunkZ, $chunk ?? new Chunk([], false));
 		if($chunk === null){
 			$chunk = $manager->getChunk($chunkX, $chunkZ);
 			if($chunk === null){

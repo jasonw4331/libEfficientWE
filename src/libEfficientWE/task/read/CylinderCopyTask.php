@@ -36,7 +36,7 @@ class CylinderCopyTask extends ChunksCopyTask{
 			Axis::Z => $worldPos->add($this->radius, $this->radius, 0)
 		};
 
-		// loop from min to max. if coordinate is in cylinder, save fullblockId
+		// loop from min to max. if coordinate is in cylinder, save blockStateId
 		for($x = 0; $x <= $worldMaxPos->x; ++$x){
 			$ax = (int) floor($worldPos->x + $x);
 			for($z = 0; $z <= $worldMaxPos->z; ++$z){
@@ -50,7 +50,7 @@ class CylinderCopyTask extends ChunksCopyTask{
 						Axis::Z => (new Vector2($centerOfBase->x, $centerOfBase->y))->distanceSquared(new Vector2($x, $y)) <= $this->radius ** 2 && $z <= $this->height
 					};
 					if($inCylinder && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
-						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
+						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getBlockStateId($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
 				}
 			}

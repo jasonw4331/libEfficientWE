@@ -9,23 +9,23 @@ use RuntimeException;
 
 final class Clipboard{
 
-	/** @phpstan-var array<int, int|null> $fullBlocks */
-	private array $fullBlocks = [];
+	/** @phpstan-var array<int, int|null> $blockStateIds */
+	private array $blockStateIds = [];
 	private ?Vector3 $worldMin;
 	private ?Vector3 $worldMax;
 
 	/**
 	 * @phpstan-return array<int, int|null>
 	 */
-	public function getFullBlocks() : array{
-		return $this->fullBlocks;
+	public function getBlockStateIds() : array{
+		return $this->blockStateIds;
 	}
 
 	/**
-	 * @phpstan-param array<int, int|null> $fullBlocks
+	 * @phpstan-param array<int, int|null> $blockStateIds
 	 */
-	public function setFullBlocks(array $fullBlocks) : self{
-		$this->fullBlocks = $fullBlocks;
+	public function setBlockStateIds(array $blockStateIds) : self{
+		$this->blockStateIds = $blockStateIds;
 		return $this;
 	}
 

@@ -42,7 +42,7 @@ final class ConeCopyTask extends ChunksCopyTask{
 		};
 		$axisVector = $coneTip->subtractVector($worldPos)->normalize();
 
-		// loop from 0 to max. if coordinate is in cone, save fullblockId
+		// loop from 0 to max. if coordinate is in cone, save blockStateId
 		for($x = 0; $x <= $worldMaxPos->x; ++$x){
 			$ax = (int) floor($worldPos->x + $x);
 			for($z = 0; $z <= $worldMaxPos->z; ++$z){
@@ -60,7 +60,7 @@ final class ConeCopyTask extends ChunksCopyTask{
 					$inCone = $orthogonalDistance <= $maxRadiusAtHeight;
 
 					if($inCone && $subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
-						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getFullBlock($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
+						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getBlockStateId($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);
 					}
 				}
 			}
