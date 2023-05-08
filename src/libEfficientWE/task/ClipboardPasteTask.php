@@ -36,6 +36,8 @@ final class ClipboardPasteTask extends AsyncTask{
 
 	protected string $worldPos;
 
+	private string $fullBlocks;
+
 	private int $changedBlocks = 0;
 
 	/**
@@ -47,7 +49,7 @@ final class ClipboardPasteTask extends AsyncTask{
 		protected int $worldId,
 		array $chunks,
 		Vector3 $worldPos,
-		protected array $fullBlocks,
+		array $fullBlocks,
 		protected bool $replaceAir,
 		Closure $onCompletion
 	){
@@ -57,6 +59,8 @@ final class ClipboardPasteTask extends AsyncTask{
 		)) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 
 		$this->worldPos = igbinary_serialize($worldPos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
+
+		$this->fullBlocks = igbinary_serialize($fullBlocks) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 
 		$this->storeLocal(self::TLS_KEY_ON_COMPLETION, $onCompletion);
 	}
@@ -79,6 +83,9 @@ final class ClipboardPasteTask extends AsyncTask{
 		/** @var Vector3 $worldPos */
 		$worldPos = igbinary_unserialize($this->worldPos);
 
+		/** @var array<int, int|null> $fullBlocks */
+		$fullBlocks = igbinary_unserialize($this->fullBlocks);
+
 		foreach($chunks as $chunkHash => $c){
 			[$chunkX, $chunkZ] = morton2d_decode($chunkHash);
 			$this->prepChunkManager($manager, $chunkX, $chunkZ, $c);
@@ -86,7 +93,7 @@ final class ClipboardPasteTask extends AsyncTask{
 
 		$iterator = new SubChunkExplorer($manager);
 
-		foreach($this->fullBlocks as $mortonCode => $fullBlockId){
+		foreach($fullBlocks as $mortonCode => $fullBlockId){
 			[$x, $y, $z] = morton3d_decode($mortonCode);
 			$ax = (int) floor($worldPos->x + $x);
 			$ay = (int) floor($worldPos->y + $y);
