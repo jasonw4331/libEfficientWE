@@ -159,11 +159,13 @@ class Cone extends Shape{
 			$this->height,
 			$this->facing,
 			$this->clipboard,
-			static function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
+			function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
 				if(!parent::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
+
+				$this->clipboard->setFullBlocks($clipboard->getFullBlocks());
 
 				$resolver->resolve([
 					'chunks' => [$centerChunk] + $adjacentChunks,

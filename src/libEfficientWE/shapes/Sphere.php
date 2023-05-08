@@ -81,11 +81,13 @@ class Sphere extends Shape{
 			$adjacentChunks,
 			$this->radius,
 			$this->clipboard,
-			static function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
+			function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
 				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
+
+				$this->clipboard->setFullBlocks($clipboard->getFullBlocks());
 
 				$resolver->resolve([
 					'chunks' => [$centerChunk] + $adjacentChunks,
