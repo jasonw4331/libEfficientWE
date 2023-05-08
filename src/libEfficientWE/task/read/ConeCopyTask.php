@@ -7,7 +7,6 @@ namespace libEfficientWE\task\read;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
-use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
@@ -20,6 +19,9 @@ use function morton3d_encode;
  */
 final class ConeCopyTask extends ChunksCopyTask{
 
+	/**
+	 * @phpstan-param Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
+	 */
 	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, protected float $height, protected int $facing, \Closure $onCompletion){
 		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
@@ -35,8 +37,7 @@ final class ConeCopyTask extends ChunksCopyTask{
 			Facing::SOUTH => $worldPos->add($this->radius, $this->radius, $this->height),
 			Facing::NORTH => $worldPos->add($this->radius, $this->radius, 0),
 			Facing::EAST => $worldPos->add($this->height, $this->radius, $this->radius),
-			Facing::WEST => $worldPos->add(0, $this->radius, $this->radius),
-			default => throw new AssumptionFailedError("Unhandled facing $this->facing")
+			Facing::WEST => $worldPos->add(0, $this->radius, $this->radius)
 		};
 		$axisVector = $coneTip->subtractVector($worldPos)->normalize();
 

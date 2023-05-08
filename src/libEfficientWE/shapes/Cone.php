@@ -14,7 +14,6 @@ use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
-use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\World;
 use function abs;
 use function array_filter;
@@ -62,7 +61,6 @@ class Cone extends Shape{
 	/**
 	 * Returns the largest {@link Cone} object which fits between the given {@link Vector3} objects. The cone's tip
 	 * will be the difference between the two given {@link Vector3} objects for a given {@link Facing} direction.
-	 * @phpstan-param Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
 	 */
 	public static function fromVector3(Vector3 $min, Vector3 $max, int $facing = Facing::UP) : Shape{
 		$minX = min($min->x, $max->x);
@@ -77,24 +75,25 @@ class Cone extends Shape{
 			throw new \InvalidArgumentException("Sphere diameter must be less than 2^20 blocks");
 		}
 
+		/**
+		 * @var Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
+		 * @var Axis::* $axis
+		 */
 		$axis = Facing::axis($facing);
 		$relativeCenterOfBase = (match ($axis) {
 			Axis::Y => new Vector3($minX + $maxX / 2, Facing::isPositive($facing) ? $maxY : $minY, $minZ + $maxZ / 2),
 			Axis::X => new Vector3(Facing::isPositive($facing) ? $maxX : $minX, $minY + $maxY / 2, $minZ + $maxZ / 2),
 			Axis::Z => new Vector3($minX + $maxX / 2, $minY + $maxY / 2, Facing::isPositive($facing) ? $maxZ : $minZ),
-			default => throw new AssumptionFailedError("Unhandled axis $axis")
 		})->subtract($minX, $minY, $minZ);
 		$height = match ($axis) {
 			Axis::Y => $maxY - $minY,
 			Axis::X => $maxX - $minX,
 			Axis::Z => $maxZ - $minZ,
-			default => throw new AssumptionFailedError("Unhandled axis $axis")
 		};
 		$radius = match ($axis) {
 			Axis::Y => min($maxX - $minX, $maxZ - $minZ) / 2,
 			Axis::X => min($maxY - $minY, $maxZ - $minZ) / 2,
 			Axis::Z => min($maxX - $minX, $maxY - $minY) / 2,
-			default => throw new AssumptionFailedError("Unhandled axis $axis")
 		};
 
 		return new self($relativeCenterOfBase, $radius, $height, $facing);
@@ -103,7 +102,6 @@ class Cone extends Shape{
 	/**
 	 * Returns the largest {@link Cone} object which fits within the given {@link AxisAlignedBB} object. The cone's
 	 * tip will be at the center of the given {@link AxisAlignedBB} object for a given {@link Facing} direction.
-	 * @phpstan-param Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
 	 */
 	public static function fromAABB(AxisAlignedBB $alignedBB, int $facing = Facing::UP) : Shape{
 		$minX = min($alignedBB->minX, $alignedBB->maxX);
@@ -118,24 +116,25 @@ class Cone extends Shape{
 			throw new \InvalidArgumentException("Sphere diameter must be less than 2^20 blocks");
 		}
 
+		/**
+		 * @var Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
+		 * @var Axis::* $axis
+		 */
 		$axis = Facing::axis($facing);
 		$relativeCenterOfBase = (match ($axis) {
 			Axis::Y => new Vector3($minX + $maxX / 2, Facing::isPositive($facing) ? $maxY : $minY, $minZ + $maxZ / 2),
 			Axis::X => new Vector3(Facing::isPositive($facing) ? $maxX : $minX, $minY + $maxY / 2, $minZ + $maxZ / 2),
 			Axis::Z => new Vector3($minX + $maxX / 2, $minY + $maxY / 2, Facing::isPositive($facing) ? $maxZ : $minZ),
-			default => throw new AssumptionFailedError("Unhandled axis $axis")
 		})->subtract($minX, $minY, $minZ);
 		$height = match ($axis) {
 			Axis::Y => $maxY - $minY,
 			Axis::X => $maxX - $minX,
 			Axis::Z => $maxZ - $minZ,
-			default => throw new AssumptionFailedError("Unhandled axis $axis")
 		};
 		$radius = match ($axis) {
 			Axis::Y => min($maxX - $minX, $maxZ - $minZ) / 2,
 			Axis::X => min($maxY - $minY, $maxZ - $minZ) / 2,
 			Axis::Z => min($maxX - $minX, $maxY - $minY) / 2,
-			default => throw new AssumptionFailedError("Unhandled axis $axis")
 		};
 
 		return new self($relativeCenterOfBase, $radius, $height, $facing);
