@@ -9,7 +9,6 @@ use pocketmine\math\Axis;
 use pocketmine\math\Vector2;
 use pocketmine\math\Vector3;
 use pocketmine\utils\AssumptionFailedError;
-use pocketmine\world\format\Chunk;
 use pocketmine\world\format\SubChunk;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
@@ -19,8 +18,8 @@ use function morton3d_encode;
 
 class CylinderCopyTask extends ChunksCopyTask{
 
-	public function __construct(int $worldId, int $chunkX, int $chunkZ, ?Chunk $chunk, array $adjacentChunks, protected float $radius, protected float $height, protected int $axis, Clipboard $clipboard, \Closure $onCompletion) {
-		parent::__construct($worldId, $chunkX, $chunkZ, $chunk, $adjacentChunks, $clipboard, $onCompletion);
+	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, protected float $height, protected int $axis, \Closure $onCompletion) {
+		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
 
 	protected function readBlocks(SimpleChunkManager $manager, Vector3 $worldPos, Clipboard $clipboard) : array{

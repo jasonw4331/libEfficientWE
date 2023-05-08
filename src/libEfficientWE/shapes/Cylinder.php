@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
-use libEfficientWE\task\read\SphereCopyTask;
-use libEfficientWE\task\write\CylinderTask;
+use libEfficientWE\task\ClipboardPasteTask;
+use libEfficientWE\task\read\CylinderCopyTask;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\math\Axis;
 use pocketmine\math\AxisAlignedBB;
+use pocketmine\math\Vector2;
 use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
-use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
 use function abs;
 use function array_map;
@@ -30,6 +30,9 @@ class Cylinder extends Shape{
 
 	protected float $radius;
 
+	/**
+	 * @phpstan-param Axis::* $axis
+	 */
 	private function __construct(protected Vector3 $centerOfBase, float $radius, protected float $height, protected int $axis){
 		$this->radius = abs($radius);
 		parent::__construct(null);
@@ -54,6 +57,7 @@ class Cylinder extends Shape{
 	/**
 	 * Returns the largest {@link Cylinder} object which fits between the given {@link Vector3} objects. The cylinder's
 	 * base will be on the lowest coordinate of the given {@link Axis}.
+	 * @phpstan-param Axis::* $axis
 	 */
 	public static function fromVector3(Vector3 $min, Vector3 $max, int $axis = Axis::Y) : Shape{
 		$minX = min($min->x, $max->x);
@@ -87,6 +91,7 @@ class Cylinder extends Shape{
 	/**
 	 * Returns the largest {@link Cylinder} object which fits inside the given {@link AxisAlignedBB}. The cylinder's
 	 * base will be on the lowest coordinate of the given {@link Axis}.
+	 * @phpstan-param Axis::* $axis
 	 */
 	public static function fromAABB(AxisAlignedBB $alignedBB, int $axis = Axis::Y) : Shape{
 		$minX = (int) min($alignedBB->minX, $alignedBB->maxX);
@@ -121,7 +126,7 @@ class Cylinder extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$maxVector = match ($this->axis) {
 			Axis::Y => $this->centerOfBase->add($this->radius, $this->height, $this->radius),
@@ -131,16 +136,15 @@ class Cylinder extends Shape{
 
 		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
 
-		$world->getServer()->getAsyncPool()->submitTask(new SphereCopyTask(
+		$world->getServer()->getAsyncPool()->submitTask(new CylinderCopyTask(
 			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
-			$this->radius,
+			$chunks,
 			$this->clipboard,
-			function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+			$this->radius,
+			$this->height,
+			$this->axis,
+			function(Clipboard $clipboard) use ($world, $chunks, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
+				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -148,7 +152,7 @@ class Cylinder extends Shape{
 				$this->clipboard->setFullBlocks($clipboard->getFullBlocks());
 
 				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
+					'chunks' => $chunks,
 					'time' => microtime(true) - $time,
 					'blockCount' => count($clipboard->getFullBlocks()),
 				]);
@@ -161,33 +165,33 @@ class Cylinder extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkPopulationLockId, $chunks] = $this->prepWorld($world);
 
-		// edit all clipboard block ids to be $block->getFullId()
-		$setClipboard = clone $this->clipboard;
-		$setClipboard->setFullBlocks(array_map(static fn(?int $fullBlock) => $block->getFullId(), $setClipboard->getFullBlocks()));
+		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
+			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) : bool {
+				[$x, $y, $z] = morton3d_decode($mortonCode);
+				return match($this->axis) {
+					Axis::Y => $y === 0 || $y === $this->height || (new Vector2($x + $this->radius, $z + $this->radius))->distanceSquared(new Vector2($x, $z)) <= $this->radius ** 2,
+					Axis::X => $x === 0 || $x === $this->height || (new Vector2($y + $this->radius, $z + $this->radius))->distanceSquared(new Vector2($y, $z)) <= $this->radius ** 2,
+					Axis::Z => $z === 0 || $z === $this->height || (new Vector2($x + $this->radius, $y + $this->radius))->distanceSquared(new Vector2($x, $y)) <= $this->radius ** 2,
+				};
+			}, ARRAY_FILTER_USE_KEY);
+		$fullBlocks = array_map(static fn(?int $fullBlock) => $block->getFullId(), $fullBlocks);
 
-		$world->getServer()->getAsyncPool()->submitTask(new CylinderTask(
+		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
 			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
-			$setClipboard->getWorldMin(),
-			$setClipboard,
-			$this->radius,
-			$this->height,
-			$this->axis,
-			$fill,
+			$chunks,
+			$this->clipboard->getWorldMin(),
+			$fullBlocks,
 			true,
-			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
+				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
 
 				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
+					'chunks' => $chunks,
 					'time' => microtime(true) - $time,
 					'blockCount' => $changedBlocks,
 				]);
