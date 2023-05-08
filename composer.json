@@ -3,7 +3,8 @@
 	"description": "A library for efficient world editing operations on PocketMine servers",
 	"version": "1.0.0",
 	"type": "library",
-	"minimum-stability": "stable",
+	"minimum-stability": "beta",
+	"prefer-stable": true,
 	"license": "LGPL-3.0-or-later",
 	"authors": [
 		{
@@ -12,9 +13,9 @@
 		}
 	],
 	"require": {
-		"php": "^8.0",
+		"php": "^8.2",
 		"ext-morton": "^0.1.0",
-		"pocketmine/pocketmine-mp": "^4.0",
+		"pocketmine/pocketmine-mp": "^5.0",
 		"symfony/filesystem": "^5.4"
 	},
 	"require-dev": {
