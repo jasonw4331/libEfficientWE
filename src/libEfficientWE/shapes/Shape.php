@@ -17,10 +17,13 @@ use pocketmine\world\ChunkLoader;
 use pocketmine\world\ChunkLockId;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
+use function array_map;
 use function array_merge;
 use function cos;
 use function deg2rad;
 use function microtime;
+use function morton2d_decode;
+use function morton2d_encode;
 use function morton3d_decode;
 use function morton3d_encode;
 use function sin;
@@ -29,7 +32,6 @@ use function sin;
  * An abstract class for polygonal shapes to interact with the world using {@link ChunksCopyTask} classes and {@link ClipboardPasteTask}.
  *
  * @internal
- * @phpstan-import-type ChunkPosHash from World
  * @phpstan-type promiseReturn array{"chunks": Chunk[], "time": float, "blockCount": int}
  */
 abstract class Shape{
@@ -96,25 +98,22 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
 			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
+			$chunks,
 			$worldPos,
 			$this->clipboard->getFullBlocks(),
 			$replaceAir,
-			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
+				if(!self::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
 					$resolver->reject();
 					return;
 				}
 
 				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
+					'chunks' => $chunks,
 					'time' => microtime(true) - $time,
 					'blockCount' => $changedBlocks,
 				]);
@@ -137,25 +136,22 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
 			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
+			$chunks,
 			$this->clipboard->getWorldMin(),
 			array_map(static fn(?int $fullBlock) => $fullBlock === $find->getFullId() ? $replace->getFullId() : $fullBlock, $this->clipboard->getFullBlocks()),
 			true,
-			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
+				if(!self::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
 					$resolver->reject();
 					return;
 				}
 
 				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
+					'chunks' => $chunks,
 					'time' => microtime(true) - $time,
 					'blockCount' => $changedBlocks,
 				]);
@@ -257,10 +253,10 @@ abstract class Shape{
 	}
 
 	/**
-	 * @return array{int, int, ChunkLoader, ChunkLockId, Chunk|null, array<ChunkPosHash, Chunk|null>}
+	 * @return array{ChunkLoader, ChunkLockId, array<int, Chunk|null>}
 	 */
 	final protected function prepWorld(World $world) : array{
-		$chunkPopulationLockId = new ChunkLockId();
+		$chunkLockId = new ChunkLockId();
 
 		$temporaryChunkLoader = new class implements ChunkLoader{
 		};
@@ -272,29 +268,31 @@ abstract class Shape{
 		$maxChunkX = ($worldMin->x + $worldMax->x) >> 4;
 		$maxChunkZ = ($worldMin->z + $worldMax->z) >> 4;
 
-		// get center of all chunks
-		$chunkX = ($minChunkX + $maxChunkX) >> 1;
-		$chunkZ = ($minChunkZ + $maxChunkZ) >> 1;
-
+		$chunks = [];
 		for($xx = $minChunkX; $xx <= $maxChunkX; ++$xx){
 			for($zz = $minChunkZ; $zz <= $maxChunkZ; ++$zz){
-				$world->lockChunk($xx, $zz, $chunkPopulationLockId);
 				$world->registerChunkLoader($temporaryChunkLoader, $xx, $zz);
+				$world->lockChunk($xx, $zz, $chunkLockId);
+				$chunks[morton2d_encode($xx, $zz)] = $world->loadChunk($xx, $zz);
 			}
 		}
 
-		$centerChunk = $world->loadChunk($chunkX, $chunkZ);
-		$adjacentChunks = $world->getAdjacentChunks($chunkX, $chunkZ);
-
-		return [$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks];
+		return [$temporaryChunkLoader, $chunkLockId, $chunks];
 	}
 
-	final protected static function resolveWorld(World $world, int $chunkX, int $chunkZ, ChunkLoader $temporaryChunkLoader, ChunkLockId $chunkPopulationLockId) : bool{
+	/**
+	 * @param int[] $chunks Morton 2d encoded chunk coordinates
+	 */
+	final protected static function resolveWorld(World $world, array $chunks, ChunkLoader $temporaryChunkLoader, ChunkLockId $chunkPopulationLockId) : bool{
 		if(!$world->isLoaded()){
 			return false;
 		}
-		$world->unlockChunk($chunkX, $chunkZ, $chunkPopulationLockId);
-		$world->unregisterChunkLoader($temporaryChunkLoader, $chunkX, $chunkZ);
+
+		foreach($chunks as $chunkHash) {
+			[$chunkX, $chunkZ] = morton2d_decode($chunkHash);
+			$world->unlockChunk($chunkX, $chunkZ, $chunkPopulationLockId);
+			$world->unregisterChunkLoader($temporaryChunkLoader, $chunkX, $chunkZ);
+		}
 
 		return true;
 	}

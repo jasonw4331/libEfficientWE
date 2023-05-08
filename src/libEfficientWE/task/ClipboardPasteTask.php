@@ -17,50 +17,39 @@ use pocketmine\world\generator\ThreadLocalGeneratorContext;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\utils\SubChunkExplorerStatus;
-use pocketmine\world\World;
 use function array_map;
 use function igbinary_serialize;
 use function igbinary_unserialize;
 
 /**
  * @internal
- * @phpstan-import-type ChunkPosHash from World
- * @phpstan-type OnCompletion \Closure(Chunk $centerChunk, array<int, Chunk> $adjacentChunks, int $changedBlocks) : void
+ * @phpstan-type OnCompletion \Closure(array<int, Chunk> $chunks, int $changedBlocks) : void
  */
 final class ClipboardPasteTask extends AsyncTask{
 	private const TLS_KEY_ON_COMPLETION = "onCompletion";
 
-	protected ?string $chunk;
-
-	protected string $adjacentChunks;
+	protected string $chunks;
 
 	protected string $worldPos;
 
 	private int $changedBlocks = 0;
 
 	/**
-	 * @param Chunk[]|null[] $adjacentChunks
-	 *
-	 * @phpstan-param array<ChunkPosHash, Chunk|null> $adjacentChunks
-	 * @phpstan-param array<int, int|null> $fullBlocks
-	 * @phpstan-param OnCompletion                    $onCompletion
+	 * @phpstan-param array<int, Chunk|null> $chunks
+	 * @phpstan-param array<int, int|null>   $fullBlocks
+	 * @phpstan-param OnCompletion           $onCompletion
 	 */
 	public function __construct(
 		protected int $worldId,
-		protected int $chunkX,
-		protected int $chunkZ,
-		?Chunk $chunk,
-		array $adjacentChunks,
+		array $chunks,
 		Vector3 $worldPos,
 		protected array $fullBlocks,
 		protected bool $replaceAir,
 		\Closure $onCompletion
 	){
-		$this->chunk = $chunk !== null ? FastChunkSerializer::serializeTerrain($chunk) : null;
-
-		$this->adjacentChunks = igbinary_serialize(array_map(
+		$this->chunks = igbinary_serialize(array_map(
 			fn(?Chunk $c) => $c !== null ? FastChunkSerializer::serializeTerrain($c) : null,
-			$adjacentChunks
+			$chunks
 		)) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 
 		$this->worldPos = igbinary_serialize($worldPos) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
@@ -75,11 +64,9 @@ final class ClipboardPasteTask extends AsyncTask{
 		}
 		$manager = new SimpleChunkManager($context->getWorldMinY(), $context->getWorldMaxY());
 
-		$chunk = $this->chunk !== null ? FastChunkSerializer::deserializeTerrain($this->chunk) : null;
-
 		/** @var string[] $serialChunks */
-		$serialChunks = igbinary_unserialize($this->adjacentChunks);
-		/** @var array<ChunkPosHash, Chunk> $chunks */
+		$serialChunks = igbinary_unserialize($this->chunks);
+		/** @var array<int, Chunk> $chunks */
 		$chunks = array_map(
 			fn(?string $serialized) => $serialized !== null ? FastChunkSerializer::deserializeTerrain($serialized) : null,
 			$serialChunks
@@ -88,10 +75,9 @@ final class ClipboardPasteTask extends AsyncTask{
 		/** @var Vector3 $worldPos */
 		$worldPos = igbinary_unserialize($this->worldPos);
 
-		$this->prepChunkManager($manager, $this->chunkX, $this->chunkZ, $chunk); // $chunk will always exist after this call
-		foreach($chunks as $relativeChunkHash => $c){
-			World::getXZ($relativeChunkHash, $relativeX, $relativeZ);
-			$this->prepChunkManager($manager, $this->chunkX + $relativeX, $this->chunkZ + $relativeZ, $c);
+		foreach($chunks as $chunkHash => $c){
+			[$chunkX, $chunkZ] = morton2d_decode($chunkHash);
+			$this->prepChunkManager($manager, $chunkX, $chunkZ, $c);
 		}
 
 		$iterator = new SubChunkExplorer($manager);
@@ -113,15 +99,13 @@ final class ClipboardPasteTask extends AsyncTask{
 			}
 		}
 
-		$this->chunk = FastChunkSerializer::serializeTerrain($chunk);
-
 		$serialChunks = [];
-		foreach($chunks as $relativeChunkHash => $c){
-			World::getXZ($relativeChunkHash, $relativeX, $relativeZ);
-			$chunk = $manager->getChunk($this->chunkX + $relativeX, $this->chunkZ + $relativeZ) ?? throw new AssumptionFailedError("Chunk should exist");
-			$serialChunks[$relativeChunkHash] = $c->isTerrainDirty() ? FastChunkSerializer::serializeTerrain($chunk) : null;
+		foreach($chunks as $chunkHash => $c){
+			[$chunkX, $chunkZ] = morton2d_decode($chunkHash);
+			$chunk = $manager->getChunk($chunkX, $chunkZ) ?? throw new AssumptionFailedError("Chunk should exist");
+			$serialChunks[$chunkHash] = $c->isTerrainDirty() ? FastChunkSerializer::serializeTerrain($chunk) : null;
 		}
-		$this->adjacentChunks = igbinary_serialize($serialChunks) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
+		$this->chunks = igbinary_serialize($serialChunks) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
 
 	private function prepChunkManager(SimpleChunkManager $manager, int $chunkX, int $chunkZ, ?Chunk &$chunk) : void{
@@ -142,22 +126,18 @@ final class ClipboardPasteTask extends AsyncTask{
 		 */
 		$onCompletion = $this->fetchLocal(self::TLS_KEY_ON_COMPLETION);
 
-		$chunk = $this->chunk !== null ?
-			FastChunkSerializer::deserializeTerrain($this->chunk) :
-			throw new AssumptionFailedError("Center chunk should never be null");
-
 		/**
-		 * @var string[]|null[]                          $serialAdjacentChunks
-		 * @phpstan-var array<ChunkPosHash, string|null> $serialAdjacentChunks
+		 * @var string[]|null[]                 $serialChunks
+		 * @phpstan-var array<int, string|null> $serialChunks
 		 */
-		$serialAdjacentChunks = igbinary_unserialize($this->adjacentChunks);
-		$adjacentChunks = [];
-		foreach($serialAdjacentChunks as $relativeChunkHash => $c){
+		$serialChunks = igbinary_unserialize($this->chunks);
+		$chunks = [];
+		foreach($serialChunks as $chunkHash => $c){
 			if($c !== null){
-				$adjacentChunks[$relativeChunkHash] = FastChunkSerializer::deserializeTerrain($c);
+				$chunks[$chunkHash] = FastChunkSerializer::deserializeTerrain($c);
 			}
 		}
 
-		$onCompletion($chunk, $adjacentChunks, $this->changedBlocks);
+		$onCompletion($chunks, $this->changedBlocks);
 	}
 }
