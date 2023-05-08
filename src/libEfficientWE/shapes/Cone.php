@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
+use libEfficientWE\task\ClipboardPasteTask;
 use libEfficientWE\task\read\ConeCopyTask;
-use libEfficientWE\task\write\ConeTask;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\math\Axis;
@@ -15,13 +15,17 @@ use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
 use pocketmine\utils\AssumptionFailedError;
-use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
 use function abs;
+use function array_filter;
+use function array_keys;
 use function array_map;
+use function count;
 use function max;
 use function microtime;
 use function min;
+use function morton3d_decode;
+use const ARRAY_FILTER_USE_KEY;
 
 /**
  * A representation of a cone shape. The facing direction determines the face of the cone's tip. The cone's base is
@@ -136,7 +140,7 @@ class Cone extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$maxVector = match ($this->facing) {
 			Facing::UP => $this->centerOfBase->add($this->radius, $this->height, $this->radius),
@@ -151,16 +155,13 @@ class Cone extends Shape{
 
 		$world->getServer()->getAsyncPool()->submitTask(new ConeCopyTask(
 			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
+			$chunks,
+			$this->clipboard,
 			$this->radius,
 			$this->height,
 			$this->facing,
-			$this->clipboard,
-			function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!parent::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+			function(Clipboard $clipboard) use ($world, $chunks, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
+				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -168,7 +169,7 @@ class Cone extends Shape{
 				$this->clipboard->setFullBlocks($clipboard->getFullBlocks());
 
 				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
+					'chunks' => $chunks,
 					'time' => microtime(true) - $time,
 					'blockCount' => count($clipboard->getFullBlocks()),
 				]);
@@ -181,72 +182,52 @@ class Cone extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkPopulationLockId, $chunks] = $this->prepWorld($world);
 
-		// edit all clipboard block ids to be $block->getFullId()
-		$setClipboard = clone $this->clipboard;
-		$setClipboard->setFullBlocks(array_map(static fn(?int $fullBlock) => $block->getFullId(), $setClipboard->getFullBlocks()));
+		$coneTip = match($this->facing) {
+			Facing::UP => new Vector3($this->radius, $this->height, $this->radius),
+			Facing::DOWN => new Vector3($this->radius, 0, $this->radius),
+			Facing::SOUTH => new Vector3($this->radius, $this->radius, $this->height),
+			Facing::NORTH => new Vector3($this->radius, $this->radius, 0),
+			Facing::EAST => new Vector3($this->height, $this->radius, $this->radius),
+			Facing::WEST => new Vector3(0, $this->radius, $this->radius)
+		};
+		$axisVector = $coneTip->subtractVector(match($this->facing) {
+			Facing::UP => new Vector3($this->radius, 0, $this->radius),
+			Facing::DOWN => new Vector3($this->radius, $this->height, $this->radius),
+			Facing::SOUTH => new Vector3($this->radius, $this->radius, 0),
+			Facing::NORTH => new Vector3($this->radius, $this->radius, $this->height),
+			Facing::EAST => new Vector3(0, $this->radius, $this->radius),
+			Facing::WEST => new Vector3($this->height, $this->radius, $this->radius)
+		})->normalize();
 
-		$world->getServer()->getAsyncPool()->submitTask(new ConeTask(
+		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
+			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) use($coneTip, $axisVector) : bool {
+				[$x, $y, $z] = morton3d_decode($mortonCode);
+				$relativeVector = (new Vector3($x, $y, $z))->subtractVector($coneTip);
+				$projectionLength = $axisVector->dot($relativeVector);
+				$projection = $axisVector->multiply($projectionLength);
+				$orthogonalVector = $relativeVector->subtractVector($projection);
+				$orthogonalDistance = $orthogonalVector->length();
+				$maxRadiusAtHeight = $projectionLength / $this->height * $this->radius;
+				return $orthogonalDistance >= $maxRadiusAtHeight;
+			}, ARRAY_FILTER_USE_KEY);
+		$fullBlocks = array_map(static fn(?int $fullBlock) => $fullBlock === null ? null : $block->getFullId(), $fullBlocks);
+
+		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
 			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
-			$setClipboard->getWorldMin(),
-			$setClipboard,
-			$this->radius,
-			$this->height,
-			$this->facing,
-			$fill,
+			$chunks,
+			$this->clipboard->getWorldMin(),
+			$fullBlocks,
 			true,
-			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
+				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkPopulationLockId)){
 					$resolver->reject();
 					return;
 				}
 
 				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
-					'time' => microtime(true) - $time,
-					'blockCount' => $changedBlocks,
-				]);
-			}
-		));
-		return $resolver->getPromise();
-	}
-
-	public function replace(World $world, Block $find, Block $replace, ?PromiseResolver $resolver = null) : Promise{
-		$time = microtime(true);
-		$resolver ??= new PromiseResolver();
-
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
-
-		// edit all clipboard block ids to be $block->getFullId()
-		$replaceClipboard = clone $this->clipboard;
-		$replaceClipboard->setFullBlocks(array_map(static fn(?int $fullBlock) => $fullBlock === $find->getFullId() ? $replace->getFullId() : $fullBlock, $replaceClipboard->getFullBlocks()));
-
-		$world->getServer()->getAsyncPool()->submitTask(new ConeTask(
-			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
-			$replaceClipboard->getWorldMin(),
-			$replaceClipboard,
-			$this->radius,
-			$this->height,
-			$this->facing,
-			true,
-			true,
-			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
-					$resolver->reject();
-					return;
-				}
-
-				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
+					'chunks' => $chunks,
 					'time' => microtime(true) - $time,
 					'blockCount' => $changedBlocks,
 				]);
