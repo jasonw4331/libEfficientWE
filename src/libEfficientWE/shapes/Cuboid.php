@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
+use libEfficientWE\task\ClipboardPasteTask;
 use libEfficientWE\task\read\CuboidCopyTask;
-use libEfficientWE\task\write\CuboidTask;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
-use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
 use function array_map;
 use function max;
@@ -24,12 +23,12 @@ use function min;
  */
 class Cuboid extends Shape{
 
-	private function __construct(protected Vector3 $lowCorner, protected Vector3 $highCorner){
+	private function __construct(protected Vector3 $highCorner){
 		parent::__construct(null);
 	}
 
 	public function getLowCorner() : Vector3{
-		return $this->lowCorner;
+		return Vector3::zero();
 	}
 
 	public function getHighCorner() : Vector3{
@@ -51,7 +50,7 @@ class Cuboid extends Shape{
 			throw new \InvalidArgumentException("All axis lengths must be less than 2^20 blocks");
 		}
 
-		return new self(new Vector3(0, 0, 0), new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
+		return new self(new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
 	}
 
 	/**
@@ -69,26 +68,23 @@ class Cuboid extends Shape{
 			throw new \InvalidArgumentException("All axis lengths must be less than 2^20 blocks");
 		}
 
-		return new self(new Vector3(0, 0, 0), new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
+		return new self(new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
 	}
 
 	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($this->highCorner));
 
 		$world->getServer()->getAsyncPool()->submitTask(new CuboidCopyTask(
 			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
+			$chunks,
 			$this->clipboard,
-			function(Clipboard $clipboard) use ($time, $world, $chunkX, $chunkZ, $centerChunk, $adjacentChunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!parent::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+			function(Clipboard $clipboard) use ($world, $chunks, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
+				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -96,7 +92,7 @@ class Cuboid extends Shape{
 				$this->clipboard->setFullBlocks($clipboard->getFullBlocks());
 
 				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
+					'chunks' => $chunks,
 					'time' => microtime(true) - $time,
 					'blockCount' => count($clipboard->getFullBlocks()),
 				]);
@@ -109,30 +105,31 @@ class Cuboid extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
-		// edit all clipboard block ids to be $block->getFullId()
-		$setClipboard = clone $this->clipboard;
-		$setClipboard->setFullBlocks(array_map(static fn(?int $fullBlock) => $block->getFullId(), $setClipboard->getFullBlocks()));
+		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
+			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) : bool {
+			[$x, $y, $z] = morton3d_decode($mortonCode);
+				return $x === 0 || $x === $this->highCorner->x ||
+					$y === 0 || $y === $this->highCorner->y ||
+					$z === 0 || $z === $this->highCorner->z;
+			}, ARRAY_FILTER_USE_KEY);
+		$fullBlocks = array_map(static fn(?int $fullBlock) => $block->getFullId(), $fullBlocks);
 
-		$world->getServer()->getAsyncPool()->submitTask(new CuboidTask(
+		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
 			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
-			$setClipboard->getWorldMin(),
-			$setClipboard,
-			$fill,
+			$chunks,
+			$this->clipboard->getWorldMin(),
+			$fullBlocks,
 			true,
-			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
+				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
 					$resolver->reject();
 					return;
 				}
 
 				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
+					'chunks' => $chunks,
 					'time' => microtime(true) - $time,
 					'blockCount' => $changedBlocks,
 				]);
