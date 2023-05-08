@@ -53,7 +53,7 @@ class Cone extends Shape{
 	}
 
 	/**
-	 * Returns the largest {@link Cone} object which fits between of the given {@link Vector3} objects. The cone's tip
+	 * Returns the largest {@link Cone} object which fits between the given {@link Vector3} objects. The cone's tip
 	 * will be the difference between the two given {@link Vector3} objects for a given {@link Facing} direction.
 	 */
 	public static function fromVector3(Vector3 $min, Vector3 $max, int $facing = Facing::UP) : Shape{
@@ -93,7 +93,7 @@ class Cone extends Shape{
 	}
 
 	/**
-	 * Returns the largest {@link Cone} object which fits inside of the given {@link AxisAlignedBB} object. The cone's
+	 * Returns the largest {@link Cone} object which fits within the given {@link AxisAlignedBB} object. The cone's
 	 * tip will be at the center of the given {@link AxisAlignedBB} object for a given {@link Facing} direction.
 	 */
 	public static function fromAABB(AxisAlignedBB $alignedBB, int $facing = Facing::UP) : Shape{

@@ -36,6 +36,9 @@ class Cuboid extends Shape{
 		return $this->highCorner;
 	}
 
+	/**
+	 * Returns the largest {@link Cuboid} object which fits between the given {@link Vector3} objects.
+	 */
 	public static function fromVector3(Vector3 $min, Vector3 $max) : self{
 		$minX = min($min->x, $max->x);
 		$minY = min($min->y, $max->y);
@@ -51,6 +54,9 @@ class Cuboid extends Shape{
 		return new self(new Vector3(0, 0, 0), new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
 	}
 
+	/**
+	 * Returns the largest {@link Cuboid} object which fits within the given {@link AxisAlignedBB} object.
+	 */
 	public static function fromAABB(AxisAlignedBB $alignedBB) : self{
 		$minX = min($alignedBB->minX, $alignedBB->maxX);
 		$minY = min($alignedBB->minY, $alignedBB->maxY);

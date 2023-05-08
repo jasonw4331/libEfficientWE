@@ -37,6 +37,9 @@ class Sphere extends Shape{
 		return $this->radius;
 	}
 
+	/**
+	 * Returns the largest {@link Sphere} object which fits between the given {@link Vector3} objects.
+	 */
 	public static function fromVector3(Vector3 $min, Vector3 $max) : Shape{
 		$minX = min($min->x, $max->x);
 		$maxX = max($min->x, $max->x);
@@ -48,6 +51,9 @@ class Sphere extends Shape{
 		return new self($minX - $maxX / 2);
 	}
 
+	/**
+	 * Returns the largest {@link Sphere} object which fits within the given {@link AxisAlignedBB} object.
+	 */
 	public static function fromAABB(AxisAlignedBB $alignedBB) : Shape{
 		$minX = min($alignedBB->minX, $alignedBB->maxX);
 		$maxX = max($alignedBB->minX, $alignedBB->maxX);

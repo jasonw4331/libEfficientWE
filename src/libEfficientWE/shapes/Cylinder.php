@@ -50,6 +50,10 @@ class Cylinder extends Shape{
 		return $this->axis;
 	}
 
+	/**
+	 * Returns the largest {@link Cylinder} object which fits between the given {@link Vector3} objects. The cylinder's
+	 * base will be on the lowest coordinate of the given {@link Axis}.
+	 */
 	public static function fromVector3(Vector3 $min, Vector3 $max, int $axis = Axis::Y) : Shape{
 		$minX = min($min->x, $max->x);
 		$minY = min($min->y, $max->y);
@@ -79,6 +83,10 @@ class Cylinder extends Shape{
 		return new self($relativeCenterOfBase, $radius, $height, $axis);
 	}
 
+	/**
+	 * Returns the largest {@link Cylinder} object which fits inside the given {@link AxisAlignedBB}. The cylinder's
+	 * base will be on the lowest coordinate of the given {@link Axis}.
+	 */
 	public static function fromAABB(AxisAlignedBB $alignedBB, int $axis = Axis::Y) : Shape{
 		$minX = (int) min($alignedBB->minX, $alignedBB->maxX);
 		$minY = (int) min($alignedBB->minY, $alignedBB->maxY);
