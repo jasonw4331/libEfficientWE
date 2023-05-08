@@ -13,6 +13,7 @@
 	],
 	"require": {
 		"php": "^8.0",
+		"ext-morton": "^0.1.0",
 		"pocketmine/pocketmine-mp": "^4.0",
 		"symfony/filesystem": "^5.4"
 	},

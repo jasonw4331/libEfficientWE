@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f92d46353f2a366fd2f9dd8d5283292d",
+    "content-hash": "b5c51fedc126166f74530c2b7512d2ca",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -779,16 +779,16 @@
         },
         {
             "name": "pocketmine/pocketmine-mp",
-            "version": "4.20.1",
+            "version": "4.20.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/PocketMine-MP.git",
-                "reference": "fea820a99e3fba8c91c0dc770fdef502ff8a6517"
+                "reference": "c3ceeeace712f4eac380b78d1851e7dfb89f557c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/PocketMine-MP/zipball/fea820a99e3fba8c91c0dc770fdef502ff8a6517",
-                "reference": "fea820a99e3fba8c91c0dc770fdef502ff8a6517",
+                "url": "https://api.github.com/repos/pmmp/PocketMine-MP/zipball/c3ceeeace712f4eac380b78d1851e7dfb89f557c",
+                "reference": "c3ceeeace712f4eac380b78d1851e7dfb89f557c",
                 "shasum": ""
             },
             "require": {
@@ -865,7 +865,7 @@
             "homepage": "https://pmmp.io",
             "support": {
                 "issues": "https://github.com/pmmp/PocketMine-MP/issues",
-                "source": "https://github.com/pmmp/PocketMine-MP/tree/4.20.1"
+                "source": "https://github.com/pmmp/PocketMine-MP/tree/4.20.4"
             },
             "funding": [
                 {
@@ -877,7 +877,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2023-04-27T12:31:02+00:00"
+            "time": "2023-05-06T17:20:18+00:00"
         },
         {
             "name": "pocketmine/raklib",
@@ -3504,7 +3504,8 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.0"
+        "php": "^8.0",
+        "ext-morton": "^0.1.0"
     },
     "platform-dev": [],
     "plugin-api-version": "2.3.0"
