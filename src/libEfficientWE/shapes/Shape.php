@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
-use libEfficientWE\task\write\ChunksChangeTask;
+use libEfficientWE\task\ClipboardPasteTask;
+use libEfficientWE\task\read\ChunksCopyTask;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\block\Block;
 use pocketmine\block\VanillaBlocks;
@@ -25,7 +26,7 @@ use function morton3d_encode;
 use function sin;
 
 /**
- * An abstract class for polygonal shapes to interact with the world using {@link ChunksChangeTask} classes.
+ * An abstract class for polygonal shapes to interact with the world using {@link ChunksCopyTask} classes and {@link ClipboardPasteTask}.
  *
  * @internal
  * @phpstan-import-type ChunkPosHash from World
@@ -91,7 +92,36 @@ abstract class Shape{
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	abstract public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise;
+	final public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
+		$time = microtime(true);
+		$resolver ??= new PromiseResolver();
+
+		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+
+		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+			$world->getId(),
+			$chunkX,
+			$chunkZ,
+			$centerChunk,
+			$adjacentChunks,
+			$worldPos,
+			$this->clipboard->getFullBlocks(),
+			$replaceAir,
+			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+					$resolver->reject();
+					return;
+				}
+
+				$resolver->resolve([
+					'chunks' => [$centerChunk] + $adjacentChunks,
+					'time' => microtime(true) - $time,
+					'blockCount' => $changedBlocks,
+				]);
+			}
+		));
+		return $resolver->getPromise();
+	}
 
 	/**
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
@@ -103,7 +133,36 @@ abstract class Shape{
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver
 	 * @phpstan-return Promise<promiseReturn>
 	 */
-	abstract public function replace(World $world, Block $find, Block $replace, ?PromiseResolver $resolver = null) : Promise;
+	final public function replace(World $world, Block $find, Block $replace, ?PromiseResolver $resolver = null) : Promise{
+		$time = microtime(true);
+		$resolver ??= new PromiseResolver();
+
+		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
+
+		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+			$world->getId(),
+			$chunkX,
+			$chunkZ,
+			$centerChunk,
+			$adjacentChunks,
+			$this->clipboard->getWorldMin(),
+			array_map(static fn(?int $fullBlock) => $fullBlock === $find->getFullId() ? $replace->getFullId() : $fullBlock, $this->clipboard->getFullBlocks()),
+			true,
+			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
+				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
+					$resolver->reject();
+					return;
+				}
+
+				$resolver->resolve([
+					'chunks' => [$centerChunk] + $adjacentChunks,
+					'time' => microtime(true) - $time,
+					'blockCount' => $changedBlocks,
+				]);
+			}
+		));
+		return $resolver->getPromise();
+	}
 
 	/**
 	 * @phpstan-param PromiseResolver<promiseReturn>|null $resolver

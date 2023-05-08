@@ -177,41 +177,6 @@ class Cone extends Shape{
 		return $resolver->getPromise();
 	}
 
-	public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
-		$time = microtime(true);
-		$resolver ??= new PromiseResolver();
-
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
-
-		$world->getServer()->getAsyncPool()->submitTask(new ConeTask(
-			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
-			$worldPos,
-			$this->clipboard,
-			$this->radius,
-			$this->height,
-			$this->facing,
-			true,
-			$replaceAir,
-			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
-					$resolver->reject();
-					return;
-				}
-
-				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
-					'time' => microtime(true) - $time,
-					'blockCount' => $changedBlocks,
-				]);
-			}
-		));
-		return $resolver->getPromise();
-	}
-
 	public function set(World $world, Block $block, bool $fill, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();

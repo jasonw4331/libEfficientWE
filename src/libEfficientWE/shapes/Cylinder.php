@@ -17,6 +17,7 @@ use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
 use function abs;
 use function array_map;
+use function count;
 use function max;
 use function microtime;
 use function min;
@@ -156,41 +157,6 @@ class Cylinder extends Shape{
 		return $resolver->getPromise();
 	}
 
-	public function paste(World $world, Vector3 $worldPos, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
-		$time = microtime(true);
-		$resolver ??= new PromiseResolver();
-
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
-
-		$world->getServer()->getAsyncPool()->submitTask(new CylinderTask(
-			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
-			$worldPos,
-			$this->clipboard,
-			$this->radius,
-			$this->height,
-			$this->axis,
-			true,
-			$replaceAir,
-			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
-					$resolver->reject();
-					return;
-				}
-
-				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
-					'time' => microtime(true) - $time,
-					'blockCount' => $changedBlocks,
-				]);
-			}
-		));
-		return $resolver->getPromise();
-	}
-
 	public function set(World $world, Block $block, bool $fill, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
@@ -213,45 +179,6 @@ class Cylinder extends Shape{
 			$this->height,
 			$this->axis,
 			$fill,
-			true,
-			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
-					$resolver->reject();
-					return;
-				}
-
-				$resolver->resolve([
-					'chunks' => [$centerChunk] + $adjacentChunks,
-					'time' => microtime(true) - $time,
-					'blockCount' => $changedBlocks,
-				]);
-			}
-		));
-		return $resolver->getPromise();
-	}
-
-	public function replace(World $world, Block $find, Block $replace, ?PromiseResolver $resolver = null) : Promise{
-		$time = microtime(true);
-		$resolver ??= new PromiseResolver();
-
-		[$chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $centerChunk, $adjacentChunks] = $this->prepWorld($world);
-
-		// edit all clipboard block ids to be $block->getFullId()
-		$replaceClipboard = clone $this->clipboard;
-		$replaceClipboard->setFullBlocks(array_map(static fn(?int $fullBlock) => $fullBlock === $find->getFullId() ? $replace->getFullId() : $fullBlock, $replaceClipboard->getFullBlocks()));
-
-		$world->getServer()->getAsyncPool()->submitTask(new CylinderTask(
-			$world->getId(),
-			$chunkX,
-			$chunkZ,
-			$centerChunk,
-			$adjacentChunks,
-			$replaceClipboard->getWorldMin(),
-			$replaceClipboard,
-			$this->radius,
-			$this->height,
-			$this->axis,
-			true,
 			true,
 			static function(Chunk $centerChunk, array $adjacentChunks, int $changedBlocks) use ($time, $world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
 				if(!static::resolveWorld($world, $chunkX, $chunkZ, $temporaryChunkLoader, $chunkPopulationLockId)){
