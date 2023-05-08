@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\task\read;
 
+use Closure;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
@@ -22,7 +23,7 @@ final class ConeCopyTask extends ChunksCopyTask{
 	/**
 	 * @phpstan-param Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
 	 */
-	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, protected float $height, protected int $facing, \Closure $onCompletion){
+	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, protected float $height, protected int $facing, Closure $onCompletion){
 		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
 

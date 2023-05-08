@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace libEfficientWE\utils;
 
 use pocketmine\math\Vector3;
+use RuntimeException;
 
 final class Clipboard{
 
@@ -30,7 +31,7 @@ final class Clipboard{
 
 	public function getWorldMin() : Vector3{
 		if($this->worldMin === null)
-			throw new \RuntimeException("WorldMin is not set");
+			throw new RuntimeException("WorldMin is not set");
 		return $this->worldMin;
 	}
 
@@ -41,7 +42,7 @@ final class Clipboard{
 
 	public function getWorldMax() : Vector3{
 		if($this->worldMax === null)
-			throw new \RuntimeException("WorldMax is not set");
+			throw new RuntimeException("WorldMax is not set");
 		return $this->worldMax;
 	}
 

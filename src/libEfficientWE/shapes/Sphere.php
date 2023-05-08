@@ -33,7 +33,7 @@ class Sphere extends Shape{
 
 	private function __construct(float $radius){
 		$this->radius = abs($radius);
-		parent::__construct(null);
+		parent::__construct();
 	}
 
 	public function getRadius() : float{

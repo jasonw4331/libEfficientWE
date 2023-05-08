@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
+use InvalidArgumentException;
 use libEfficientWE\task\ClipboardPasteTask;
 use libEfficientWE\task\read\CylinderCopyTask;
 use libEfficientWE\utils\Clipboard;
@@ -39,7 +40,7 @@ class Cylinder extends Shape{
 	 */
 	private function __construct(protected Vector3 $centerOfBase, float $radius, protected float $height, protected int $axis){
 		$this->radius = abs($radius);
-		parent::__construct(null);
+		parent::__construct();
 	}
 
 	public function getCenterOfBase() : Vector3{
@@ -70,7 +71,7 @@ class Cylinder extends Shape{
 		$maxY = max($min->y, $max->y);
 		$maxZ = max($min->z, $max->z);
 		if($axis !== Axis::X && $axis !== Axis::Y && $axis !== Axis::Z){
-			throw new \InvalidArgumentException("Axis must be one of Axis::X, Axis::Y or Axis::Z");
+			throw new InvalidArgumentException("Axis must be one of Axis::X, Axis::Y or Axis::Z");
 		}
 		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
@@ -100,7 +101,7 @@ class Cylinder extends Shape{
 		$maxY = (int) max($alignedBB->minY, $alignedBB->maxY);
 		$maxZ = (int) max($alignedBB->minZ, $alignedBB->maxZ);
 		if($axis !== Axis::X && $axis !== Axis::Y && $axis !== Axis::Z){
-			throw new \InvalidArgumentException("Axis must be one of Axis::X, Axis::Y or Axis::Z");
+			throw new InvalidArgumentException("Axis must be one of Axis::X, Axis::Y or Axis::Z");
 		}
 		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 

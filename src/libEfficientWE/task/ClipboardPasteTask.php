@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\task;
 
+use Closure;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\data\bedrock\BiomeIds;
 use pocketmine\math\Vector3;
@@ -48,7 +49,7 @@ final class ClipboardPasteTask extends AsyncTask{
 		Vector3 $worldPos,
 		protected array $fullBlocks,
 		protected bool $replaceAir,
-		\Closure $onCompletion
+		Closure $onCompletion
 	){
 		$this->chunks = igbinary_serialize(array_map(
 			fn(?Chunk $c) => $c !== null ? FastChunkSerializer::serializeTerrain($c) : null,
@@ -63,7 +64,7 @@ final class ClipboardPasteTask extends AsyncTask{
 	public function onRun() : void{
 		$context = ThreadLocalGeneratorContext::fetch($this->worldId);
 		if($context === null){
-			throw new AssumptionFailedError("Generator context should have been initialized before any PopulationTask execution");
+			throw new AssumptionFailedError("Generator context should have been initialized before any Task execution");
 		}
 		$manager = new SimpleChunkManager($context->getWorldMinY(), $context->getWorldMaxY());
 
@@ -124,7 +125,7 @@ final class ClipboardPasteTask extends AsyncTask{
 
 	public function onCompletion() : void{
 		/**
-		 * @var \Closure             $onCompletion
+		 * @var Closure              $onCompletion
 		 * @phpstan-var OnCompletion $onCompletion
 		 */
 		$onCompletion = $this->fetchLocal(self::TLS_KEY_ON_COMPLETION);

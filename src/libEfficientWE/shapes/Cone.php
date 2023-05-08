@@ -39,7 +39,7 @@ class Cone extends Shape{
 	 */
 	private function __construct(protected Vector3 $centerOfBase, float $radius, protected float $height, protected int $facing){
 		$this->radius = abs($radius);
-		parent::__construct(null);
+		parent::__construct();
 	}
 
 	public function getCenterOfBase() : Vector3{
@@ -74,7 +74,7 @@ class Cone extends Shape{
 
 		/**
 		 * @var Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
-		 * @var Axis::* $axis
+		 * @var Axis::*                                                                       $axis
 		 */
 		$axis = Facing::axis($facing);
 		$relativeCenterOfBase = (match ($axis) {
@@ -112,7 +112,7 @@ class Cone extends Shape{
 
 		/**
 		 * @var Facing::UP|Facing::DOWN|Facing::NORTH|Facing::SOUTH|Facing::EAST|Facing::WEST $facing
-		 * @var Axis::* $axis
+		 * @var Axis::*                                                                       $axis
 		 */
 		$axis = Facing::axis($facing);
 		$relativeCenterOfBase = (match ($axis) {

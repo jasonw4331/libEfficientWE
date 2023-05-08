@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\task\read;
 
+use Closure;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\math\Axis;
 use pocketmine\math\Vector2;
@@ -20,7 +21,7 @@ class CylinderCopyTask extends ChunksCopyTask{
 	/**
 	 * @phpstan-param Axis::* $axis
 	 */
-	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, protected float $height, protected int $axis, \Closure $onCompletion){
+	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, protected float $height, protected int $axis, Closure $onCompletion){
 		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
 

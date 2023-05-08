@@ -29,7 +29,7 @@ use const ARRAY_FILTER_USE_KEY;
 class Cuboid extends Shape{
 
 	private function __construct(protected Vector3 $highCorner){
-		parent::__construct(null);
+		parent::__construct();
 	}
 
 	public function getLowCorner() : Vector3{

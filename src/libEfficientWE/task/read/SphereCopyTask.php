@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\task\read;
 
+use Closure;
 use libEfficientWE\utils\Clipboard;
 use pocketmine\math\Vector3;
 use pocketmine\world\format\SubChunk;
@@ -18,7 +19,7 @@ use function morton3d_encode;
  */
 final class SphereCopyTask extends ChunksCopyTask{
 
-	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, \Closure $onCompletion){
+	public function __construct(int $worldId, array $chunks, Clipboard $clipboard, protected float $radius, Closure $onCompletion){
 		parent::__construct($worldId, $chunks, $clipboard, $onCompletion);
 	}
 
