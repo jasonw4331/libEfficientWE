@@ -52,7 +52,9 @@ class Cuboid extends Shape{
 		$maxZ = max($min->z, $max->z);
 		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
-		return new self(new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
+		$shape = new self(new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	/**
@@ -67,7 +69,9 @@ class Cuboid extends Shape{
 		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
 		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
-		return new self(new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
+		$shape = new self(new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{

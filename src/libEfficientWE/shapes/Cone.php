@@ -93,7 +93,9 @@ class Cone extends Shape{
 			Axis::Z => min($maxX - $minX, $maxY - $minY) / 2,
 		};
 
-		return new self($relativeCenterOfBase, $radius, $height, $facing);
+		$shape = new self($relativeCenterOfBase, $radius, $height, $facing);
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	/**
@@ -131,7 +133,9 @@ class Cone extends Shape{
 			Axis::Z => min($maxX - $minX, $maxY - $minY) / 2,
 		};
 
-		return new self($relativeCenterOfBase, $radius, $height, $facing);
+		$shape = new self($relativeCenterOfBase, $radius, $height, $facing);
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{

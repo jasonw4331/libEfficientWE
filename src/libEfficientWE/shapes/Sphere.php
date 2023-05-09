@@ -45,10 +45,16 @@ class Sphere extends Shape{
 	 */
 	public static function fromVector3(Vector3 $min, Vector3 $max) : Shape{
 		$minX = min($min->x, $max->x);
+		$minY = min($min->y, $max->y);
+		$minZ = min($min->z, $max->z);
 		$maxX = max($min->x, $max->x);
-		self::validateMortonEncode($maxX - $minX, $maxX - $minX, $maxX - $minX);
+		$maxY = max($min->y, $max->y);
+		$maxZ = max($min->z, $max->z);
+		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
-		return new self($minX - $maxX / 2);
+		$shape = new self($minX - $maxX / 2);
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	/**
@@ -56,10 +62,16 @@ class Sphere extends Shape{
 	 */
 	public static function fromAABB(AxisAlignedBB $alignedBB) : Shape{
 		$minX = min($alignedBB->minX, $alignedBB->maxX);
+		$minY = min($alignedBB->minY, $alignedBB->maxY);
+		$minZ = min($alignedBB->minZ, $alignedBB->maxZ);
 		$maxX = max($alignedBB->minX, $alignedBB->maxX);
-		self::validateMortonEncode($maxX - $minX, $maxX - $minX, $maxX - $minX);
+		$maxY = max($alignedBB->minY, $alignedBB->maxY);
+		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
+		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
-		return new self($minX - $maxX / 2);
+		$shape = new self($minX - $maxX / 2);
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{

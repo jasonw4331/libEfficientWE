@@ -86,7 +86,9 @@ class Cylinder extends Shape{
 			Axis::Z => new Vector3($radius, $radius, 0)
 		};
 
-		return new self($relativeCenterOfBase, $radius, $height, $axis);
+		$shape = new self($relativeCenterOfBase, $radius, $height, $axis);
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	/**
@@ -116,7 +118,9 @@ class Cylinder extends Shape{
 			Axis::Z => new Vector3($radius, $radius, 0)
 		};
 
-		return new self($relativeCenterOfBase, $radius, $height, $axis);
+		$shape = new self($relativeCenterOfBase, $radius, $height, $axis);
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
