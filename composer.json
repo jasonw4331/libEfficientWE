@@ -1,7 +1,7 @@
 {
 	"name": "jasonw4331/libefficientwe",
 	"description": "A library for efficient world editing operations on PocketMine servers",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"type": "library",
 	"minimum-stability": "beta",
 	"prefer-stable": true,
