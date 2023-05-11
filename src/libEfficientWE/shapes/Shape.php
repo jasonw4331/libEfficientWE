@@ -100,6 +100,11 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
+		if(count($this->clipboard->getFullBlocks()) < 1) {
+			$resolver->reject();
+			return $resolver->getPromise();
+		}
+
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
@@ -137,6 +142,11 @@ abstract class Shape{
 	final public function replace(World $world, Block $find, Block $replace, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
+
+		if(count($this->clipboard->getFullBlocks()) < 1) {
+			$resolver->reject();
+			return $resolver->getPromise();
+		}
 
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
