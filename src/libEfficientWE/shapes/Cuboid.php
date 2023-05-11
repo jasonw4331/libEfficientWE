@@ -82,7 +82,10 @@ class Cuboid extends Shape{
 
 		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($this->highCorner));
 
-		$world->getServer()->getAsyncPool()->submitTask(new CuboidCopyTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new CuboidCopyTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard,
@@ -100,7 +103,7 @@ class Cuboid extends Shape{
 					'blockCount' => count($clipboard->getFullBlocks()),
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 
@@ -119,7 +122,10 @@ class Cuboid extends Shape{
 			}, ARRAY_FILTER_USE_KEY);
 		$fullBlocks = array_map(static fn(?int $fullBlock) => $block->getFullId(), $fullBlocks);
 
-		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard->getWorldMin(),
@@ -137,7 +143,7 @@ class Cuboid extends Shape{
 					'blockCount' => $changedBlocks,
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 }

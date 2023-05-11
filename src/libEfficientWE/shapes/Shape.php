@@ -107,7 +107,10 @@ abstract class Shape{
 
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
-		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$worldPos,
@@ -125,7 +128,7 @@ abstract class Shape{
 					'blockCount' => $changedBlocks,
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 
@@ -150,7 +153,10 @@ abstract class Shape{
 
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
-		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard->getWorldMin(),
@@ -168,7 +174,7 @@ abstract class Shape{
 					'blockCount' => $changedBlocks,
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 

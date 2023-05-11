@@ -78,17 +78,20 @@ class Sphere extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$temporaryChunkLoader, $chunkPopulationLockId, $chunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->add($this->radius * 2, $this->radius * 2, $this->radius * 2));
 
-		$world->getServer()->getAsyncPool()->submitTask(new SphereCopyTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new SphereCopyTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard,
 			$this->radius,
-			function(Clipboard $clipboard) use ($time, $world, $chunks, $temporaryChunkLoader, $chunkPopulationLockId, $resolver) : void{
-				if(!static::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkPopulationLockId)){
+			function(Clipboard $clipboard) use ($world, $chunks, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
+				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -101,7 +104,7 @@ class Sphere extends Shape{
 					'blockCount' => count($clipboard->getFullBlocks()),
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 
@@ -109,7 +112,7 @@ class Sphere extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$temporaryChunkLoader, $chunkPopulationLockId, $chunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
 			array_filter($this->clipboard->getFullBlocks(), function(int $mortonCode) : bool{
@@ -118,14 +121,17 @@ class Sphere extends Shape{
 			}, ARRAY_FILTER_USE_KEY);
 		$fullBlocks = array_map(static fn(?int $fullBlock) => $block->getFullId(), $fullBlocks);
 
-		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard->getWorldMin(),
 			$fullBlocks,
 			true,
-			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
-				if(!static::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkPopulationLockId)){
+			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
+				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -136,7 +142,7 @@ class Sphere extends Shape{
 					'blockCount' => $changedBlocks,
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 }

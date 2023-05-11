@@ -155,7 +155,10 @@ class Cone extends Shape{
 
 		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
 
-		$world->getServer()->getAsyncPool()->submitTask(new ConeCopyTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new ConeCopyTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard,
@@ -176,7 +179,7 @@ class Cone extends Shape{
 					'blockCount' => count($clipboard->getFullBlocks()),
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 
@@ -184,7 +187,7 @@ class Cone extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$temporaryChunkLoader, $chunkPopulationLockId, $chunks] = $this->prepWorld($world);
+		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$coneTip = match ($this->facing) {
 			Facing::UP => new Vector3($this->radius, $this->height, $this->radius),
@@ -216,14 +219,17 @@ class Cone extends Shape{
 			}, ARRAY_FILTER_USE_KEY);
 		$fullBlocks = array_map(static fn(?int $fullBlock) => $fullBlock === null ? null : $block->getFullId(), $fullBlocks);
 
-		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard->getWorldMin(),
 			$fullBlocks,
 			true,
-			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
-				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkPopulationLockId)){
+			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
+				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -234,7 +240,7 @@ class Cone extends Shape{
 					'blockCount' => $changedBlocks,
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 }
