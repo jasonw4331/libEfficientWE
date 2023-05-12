@@ -16,7 +16,9 @@ use pocketmine\world\World;
 use function array_filter;
 use function array_keys;
 use function array_map;
+use function constant;
 use function count;
+use function defined;
 use function max;
 use function microtime;
 use function min;
@@ -78,6 +80,13 @@ class Cuboid extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
+		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
+			$resolver->getPromise()->onCompletion(
+				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+			);
+		}
+
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($this->highCorner));
@@ -110,6 +119,13 @@ class Cuboid extends Shape{
 	public function set(World $world, Block $block, bool $fill, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
+
+		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
+			$resolver->getPromise()->onCompletion(
+				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+			);
+		}
 
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 

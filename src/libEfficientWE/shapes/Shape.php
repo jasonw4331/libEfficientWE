@@ -20,7 +20,10 @@ use pocketmine\world\World;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function constant;
 use function cos;
+use function count;
+use function defined;
 use function deg2rad;
 use function microtime;
 use function morton2d_decode;
@@ -69,6 +72,13 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
+		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
+			$resolver->getPromise()->onCompletion(
+				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+			);
+		}
+
 		/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
 		$totalledResolver = new PromiseResolver();
 
@@ -100,7 +110,14 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		if(count($this->clipboard->getFullBlocks()) < 1) {
+		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
+			$resolver->getPromise()->onCompletion(
+				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+			);
+		}
+
+		if(count($this->clipboard->getFullBlocks()) < 1){
 			$resolver->reject();
 			return $resolver->getPromise();
 		}
@@ -146,7 +163,14 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		if(count($this->clipboard->getFullBlocks()) < 1) {
+		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
+			$resolver->getPromise()->onCompletion(
+				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+			);
+		}
+
+		if(count($this->clipboard->getFullBlocks()) < 1){
 			$resolver->reject();
 			return $resolver->getPromise();
 		}
@@ -185,6 +209,13 @@ abstract class Shape{
 	final public function rotate(World $world, Vector3 $worldPos, Vector3 $relativeCenter, float $roll, float $yaw, float $pitch, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
+
+		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
+			$resolver->getPromise()->onCompletion(
+				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+			);
+		}
 
 		/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
 		$totalledResolver = new PromiseResolver();
@@ -250,6 +281,13 @@ abstract class Shape{
 	final public function translate(World $world, Vector3 $worldPos, int $direction, int $offset, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
+
+		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
+			$resolver->getPromise()->onCompletion(
+				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+			);
+		}
 
 		/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
 		$totalledResolver = new PromiseResolver();
