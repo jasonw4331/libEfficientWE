@@ -43,11 +43,11 @@ final class ConeCopyTask extends ChunksCopyTask{
 		$axisVector = $coneTip->subtractVector($worldPos)->normalize();
 
 		// loop from 0 to max. if coordinate is in cone, save fullblockId
-		for($x = 0; $x <= $worldMaxPos->x; ++$x){
+		for($x = 0; $x <= $worldMaxPos->x - $worldPos->x; ++$x){
 			$ax = (int) floor($worldPos->x + $x);
-			for($z = 0; $z <= $worldMaxPos->z; ++$z){
+			for($z = 0; $z <= $worldMaxPos->z - $worldPos->z; ++$z){
 				$az = (int) floor($worldPos->z + $z);
-				for($y = 0; $y <= $worldMaxPos->y; ++$y){
+				for($y = 0; $y <= $worldMaxPos->y - $worldPos->y; ++$y){
 					$ay = (int) floor($worldPos->y + $y);
 					// check if coordinate is in cylinder depending on axis
 					$relativePoint = new Vector3($x, $y, $z);
