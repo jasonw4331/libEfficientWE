@@ -74,7 +74,7 @@ final class ClipboardPasteTask extends AsyncTask{
 
 		/** @var string[] $serialChunks */
 		$serialChunks = igbinary_unserialize($this->chunks);
-		/** @var array<int, Chunk> $chunks */
+		/** @var array<int, Chunk|null> $chunks */
 		$chunks = array_map(
 			fn(?string $serialized) => $serialized !== null ? FastChunkSerializer::deserializeTerrain($serialized) : null,
 			$serialChunks
@@ -114,7 +114,7 @@ final class ClipboardPasteTask extends AsyncTask{
 		foreach($chunks as $chunkHash => $c){
 			[$chunkX, $chunkZ] = morton2d_decode($chunkHash);
 			$chunk = $manager->getChunk($chunkX, $chunkZ) ?? throw new AssumptionFailedError("Chunk should exist");
-			$serialChunks[$chunkHash] = $c->isTerrainDirty() ? FastChunkSerializer::serializeTerrain($chunk) : null;
+			$serialChunks[$chunkHash] = $chunk->isTerrainDirty() ? FastChunkSerializer::serializeTerrain($chunk) : null;
 		}
 		$this->chunks = igbinary_serialize($serialChunks) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
 	}
