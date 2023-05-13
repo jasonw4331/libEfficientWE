@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
+use GlobalLogger;
 use libEfficientWE\task\ClipboardPasteTask;
 use libEfficientWE\task\read\CuboidCopyTask;
 use libEfficientWE\utils\Clipboard;
@@ -13,6 +14,7 @@ use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
 use pocketmine\world\World;
+use PrefixedLogger;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -82,8 +84,8 @@ class Cuboid extends Shape{
 
 		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
 			$resolver->getPromise()->onCompletion(
-				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
-				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+				static fn(array $value) => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+				static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
 			);
 		}
 
@@ -122,8 +124,8 @@ class Cuboid extends Shape{
 
 		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
 			$resolver->getPromise()->onCompletion(
-				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
-				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+				static fn(array $value) => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+				static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
 			);
 		}
 
