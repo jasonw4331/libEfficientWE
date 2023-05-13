@@ -128,6 +128,11 @@ class Sphere extends Shape{
 			);
 		}
 
+		if(count($this->clipboard->getFullBlocks()) < 1){
+			$resolver->reject();
+			return $resolver->getPromise();
+		}
+
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$fullBlocks = $fill ? $this->clipboard->getFullBlocks() :
