@@ -69,31 +69,10 @@ abstract class Shape{
 	 * @phpstan-return Promise<promiseReturn>
 	 */
 	final public function cut(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
-		$time = microtime(true);
-		$resolver ??= new PromiseResolver();
-
-		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
-			$resolver->getPromise()->onCompletion(
-				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
-				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
-			);
-		}
-
-		/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
-		$totalledResolver = new PromiseResolver();
-
-		$this->copy($world, $worldPos)->onCompletion(
-			function(array $value) use ($world, $totalledResolver) : void{
-				$this->set($world, VanillaBlocks::AIR(), true, $totalledResolver);
-			},
-			static fn() => $resolver->reject()
-		);
-		$totalledResolver->getPromise()->onCompletion(
-			static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
-			static fn() => $resolver->reject()
-		);
-
-		return $resolver->getPromise();
+		$this->clipboard->setWorldMin($worldPos)->setWorldMax(
+			$worldPos->addVector($this->clipboard->getWorldMax()->subtractVector($this->clipboard->getWorldMin()))
+		)->setFullBlocks([]); // reset the clipboard
+		return $this->set($world, VanillaBlocks::AIR(), true, $resolver);
 	}
 
 	/**
@@ -118,7 +97,15 @@ abstract class Shape{
 		}
 
 		if(count($this->clipboard->getFullBlocks()) < 1){
-			$resolver->reject();
+			$totalledResolver = new PromiseResolver();
+			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(
+				fn (array $value) => $this->paste($world, $worldPos, $replaceAir, $totalledResolver), // recursive but the clipboard is now set
+				static fn() => $resolver->reject()
+			);
+			$totalledResolver->getPromise()->onCompletion(
+				static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
+				static fn() => $resolver->reject()
+			);
 			return $resolver->getPromise();
 		}
 
@@ -171,7 +158,15 @@ abstract class Shape{
 		}
 
 		if(count($this->clipboard->getFullBlocks()) < 1){
-			$resolver->reject();
+			$totalledResolver = new PromiseResolver();
+			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(
+				fn (array $value) => $this->replace($world, $find, $replace, $totalledResolver), // recursive but the clipboard is now set
+				static fn() => $resolver->reject()
+			);
+			$totalledResolver->getPromise()->onCompletion(
+				static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
+				static fn() => $resolver->reject()
+			);
 			return $resolver->getPromise();
 		}
 

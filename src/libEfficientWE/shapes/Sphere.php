@@ -131,7 +131,15 @@ class Sphere extends Shape{
 		}
 
 		if(count($this->clipboard->getFullBlocks()) < 1){
-			$resolver->reject();
+			$totalledResolver = new PromiseResolver();
+			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(
+				fn (array $value) => $this->set($world, $block, $fill, $totalledResolver), // recursive but the clipboard is now set
+				static fn() => $resolver->reject()
+			);
+			$totalledResolver->getPromise()->onCompletion(
+				static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
+				static fn() => $resolver->reject()
+			);
 			return $resolver->getPromise();
 		}
 
