@@ -20,10 +20,8 @@ use pocketmine\world\World;
 use function array_keys;
 use function array_map;
 use function array_merge;
-use function constant;
 use function cos;
 use function count;
-use function defined;
 use function deg2rad;
 use function microtime;
 use function morton2d_decode;
@@ -89,12 +87,10 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
-			$resolver->getPromise()->onCompletion(
-				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
-				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
-			);
-		}
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Paste operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Paste operation failed to complete')
+		);
 
 		if(count($this->clipboard->getFullBlocks()) < 1){
 			$totalledResolver = new PromiseResolver();
@@ -150,12 +146,10 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
-			$resolver->getPromise()->onCompletion(
-				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
-				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
-			);
-		}
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Replace operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Replace operation failed to complete')
+		);
 
 		if(count($this->clipboard->getFullBlocks()) < 1){
 			$totalledResolver = new PromiseResolver();
@@ -205,12 +199,10 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
-			$resolver->getPromise()->onCompletion(
-				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
-				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
-			);
-		}
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Rotate operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Rotate operation failed to complete')
+		);
 
 		/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
 		$totalledResolver = new PromiseResolver();
@@ -277,12 +269,10 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
-			$resolver->getPromise()->onCompletion(
-				static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
-				static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
-			);
-		}
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Translate operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Translate operation failed to complete')
+		);
 
 		/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
 		$totalledResolver = new PromiseResolver();

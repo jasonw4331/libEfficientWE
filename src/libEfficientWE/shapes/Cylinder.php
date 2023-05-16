@@ -22,9 +22,8 @@ use function abs;
 use function array_filter;
 use function array_keys;
 use function array_map;
-use function constant;
+use function array_merge;
 use function count;
-use function defined;
 use function max;
 use function microtime;
 use function min;
@@ -131,11 +130,14 @@ class Cylinder extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
-			$resolver->getPromise()->onCompletion(
-				static fn(array $value) => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
-				static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
-			);
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Cylinder Copy operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+		);
+
+		if($this->clipboard->getWorldMax()->distance($this->clipboard->getWorldMin()) < 1) {
+			$resolver->reject();
+			return $resolver->getPromise();
 		}
 
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
@@ -180,12 +182,10 @@ class Cylinder extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		if(defined('libEfficientWE\LOGGING') && constant('libEfficientWE\LOGGING') === true){
-			$resolver->getPromise()->onCompletion(
-				static fn(array $value) => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
-				static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
-			);
-		}
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Cylinder Set operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Cylinder Set operation failed to complete')
+		);
 
 		if(count($this->clipboard->getFullBlocks()) < 1){
 			$totalledResolver = new PromiseResolver();
