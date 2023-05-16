@@ -36,7 +36,7 @@ final class Clipboard{
 	}
 
 	public function setWorldMin(Vector3 $worldMin) : self{
-		$this->worldMin = $worldMin;
+		$this->worldMin = $worldMin->asVector3();
 		return $this;
 	}
 
@@ -47,7 +47,7 @@ final class Clipboard{
 	}
 
 	public function setWorldMax(Vector3 $worldMax) : self{
-		$this->worldMax = $worldMax;
+		$this->worldMax = $worldMax->asVector3();
 		return $this;
 	}
 
