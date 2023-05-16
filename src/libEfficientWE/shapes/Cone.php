@@ -32,6 +32,7 @@ use const ARRAY_FILTER_USE_KEY;
 /**
  * A representation of a cone shape. The facing direction determines the face of the cone's tip. The cone's base is
  * always the opposite face of passed {@link Facing} direction.
+ * @phpstan-import-type promiseReturn from Shape
  */
 class Cone extends Shape{
 
@@ -206,6 +207,7 @@ class Cone extends Shape{
 		);
 
 		if(count($this->clipboard->getFullBlocks()) < 1){
+			/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
 			$totalledResolver = new PromiseResolver();
 			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(
 				fn (array $value) => $this->set($world, $block, $fill, $totalledResolver), // recursive but the clipboard is now set

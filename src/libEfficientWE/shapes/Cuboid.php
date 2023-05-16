@@ -28,6 +28,7 @@ use const ARRAY_FILTER_USE_KEY;
 
 /**
  * A representation of a cuboid shape.
+ * @phpstan-import-type promiseReturn from Shape
  */
 class Cuboid extends Shape{
 
@@ -130,6 +131,7 @@ class Cuboid extends Shape{
 		);
 
 		if(count($this->clipboard->getFullBlocks()) < 1){
+			/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
 			$totalledResolver = new PromiseResolver();
 			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(
 				fn (array $value) => $this->set($world, $block, $fill, $totalledResolver), // recursive but the clipboard is now set
