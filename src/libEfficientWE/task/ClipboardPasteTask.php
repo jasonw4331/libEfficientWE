@@ -86,7 +86,7 @@ final class ClipboardPasteTask extends AsyncTask{
 
 		foreach($chunks as $chunkHash => $c){
 			[$chunkX, $chunkZ] = morton2d_decode($chunkHash);
-			$manager->setChunk($chunkX, $chunkZ, $c ?? ($c = new Chunk([], BiomeArray::fill(BiomeIds::OCEAN), false)));
+			$manager->setChunk($chunkX, $chunkZ, $c ?? ($c = new Chunk([], false)));
 			$c->setTerrainDirtyFlag(Chunk::DIRTY_FLAG_BLOCKS, true);
 		}
 

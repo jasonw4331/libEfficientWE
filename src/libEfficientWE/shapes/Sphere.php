@@ -131,7 +131,7 @@ class Sphere extends Shape{
 			static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Sphere Set operation failed to complete')
 		);
 
-		if(count($this->clipboard->getFullBlocks()) < 1){
+		if(count($this->clipboard->getBlockStateIds()) < 1){
 			/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
 			$totalledResolver = new PromiseResolver();
 			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(

@@ -69,7 +69,7 @@ abstract class Shape{
 	final public function cut(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
 		$this->clipboard->setWorldMin($worldPos)->setWorldMax(
 			$worldPos->addVector($this->clipboard->getWorldMax()->subtractVector($this->clipboard->getWorldMin()))
-		)->setFullBlocks([]); // reset the clipboard
+		)->setBlockStateIds([]); // reset the clipboard
 		return $this->set($world, VanillaBlocks::AIR(), true, $resolver);
 	}
 
@@ -151,7 +151,7 @@ abstract class Shape{
 			static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Replace operation failed to complete')
 		);
 
-		if(count($this->clipboard->getFullBlocks()) < 1){
+		if(count($this->clipboard->getBlockStateIds()) < 1){
 			$totalledResolver = new PromiseResolver();
 			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(
 				fn (array $value) => $this->replace($world, $find, $replace, $totalledResolver), // recursive but the clipboard is now set
