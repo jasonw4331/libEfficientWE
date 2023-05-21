@@ -22,11 +22,11 @@ final class CuboidCopyTask extends ChunksCopyTask{
 		$blocks = [];
 		$subChunkExplorer = new SubChunkExplorer($manager);
 
-		for($x = 0; $x <= $worldMaxPos->x; ++$x){
+		for($x = 0; $x <= $worldMaxPos->x - $worldPos->x; ++$x){
 			$ax = (int) floor($worldPos->x + $x);
-			for($z = 0; $z <= $worldMaxPos->z; ++$z){
+			for($z = 0; $z <= $worldMaxPos->z - $worldPos->z; ++$z){
 				$az = (int) floor($worldPos->z + $z);
-				for($y = 0; $y <= $worldMaxPos->y; ++$y){
+				for($y = 0; $y <= $worldMaxPos->y - $worldPos->y; ++$y){
 					$ay = (int) floor($worldPos->y + $y);
 					if($subChunkExplorer->moveTo($ax, $ay, $az) !== SubChunkExplorerStatus::INVALID){
 						$blocks[morton3d_encode($x, $y, $z)] = $subChunkExplorer->currentSubChunk?->getBlockStateId($ax & SubChunk::COORD_MASK, $ay & SubChunk::COORD_MASK, $az & SubChunk::COORD_MASK);

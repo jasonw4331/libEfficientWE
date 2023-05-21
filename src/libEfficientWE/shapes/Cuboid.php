@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
+use GlobalLogger;
 use libEfficientWE\task\ClipboardPasteTask;
 use libEfficientWE\task\read\CuboidCopyTask;
 use libEfficientWE\utils\Clipboard;
@@ -13,9 +14,11 @@ use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
 use pocketmine\world\World;
+use PrefixedLogger;
 use function array_filter;
 use function array_keys;
 use function array_map;
+use function array_merge;
 use function count;
 use function max;
 use function microtime;
@@ -25,6 +28,7 @@ use const ARRAY_FILTER_USE_KEY;
 
 /**
  * A representation of a cuboid shape.
+ * @phpstan-import-type promiseReturn from Shape
  */
 class Cuboid extends Shape{
 
@@ -52,7 +56,9 @@ class Cuboid extends Shape{
 		$maxZ = max($min->z, $max->z);
 		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
-		return new self(new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
+		$shape = new self(new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	/**
@@ -67,18 +73,33 @@ class Cuboid extends Shape{
 		$maxZ = max($alignedBB->minZ, $alignedBB->maxZ);
 		self::validateMortonEncode($maxX - $minX, $maxY - $minY, $maxZ - $minZ);
 
-		return new self(new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
+		$shape = new self(new Vector3($maxX - $minX, $maxY - $minY, $maxZ - $minZ));
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Cuboid Copy operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Cuboid Copy operation failed to complete')
+		);
+
+		if($this->clipboard->getWorldMax()->distance($this->clipboard->getWorldMin()) < 1) {
+			$resolver->reject();
+			return $resolver->getPromise();
+		}
+
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($this->highCorner));
 
-		$world->getServer()->getAsyncPool()->submitTask(new CuboidCopyTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new CuboidCopyTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard,
@@ -96,13 +117,32 @@ class Cuboid extends Shape{
 					'blockCount' => count($clipboard->getBlockStateIds()),
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 
 	public function set(World $world, Block $block, bool $fill, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
+
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Cuboid Set operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Cuboid Set operation failed to complete')
+		);
+
+		if(count($this->clipboard->getFullBlocks()) < 1){
+			/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
+			$totalledResolver = new PromiseResolver();
+			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(
+				fn (array $value) => $this->set($world, $block, $fill, $totalledResolver), // recursive but the clipboard is now set
+				static fn() => $resolver->reject()
+			);
+			$totalledResolver->getPromise()->onCompletion(
+				static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
+				static fn() => $resolver->reject()
+			);
+			return $resolver->getPromise();
+		}
 
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
@@ -115,7 +155,10 @@ class Cuboid extends Shape{
 			}, ARRAY_FILTER_USE_KEY);
 		$blockStateIds = array_map(static fn(?int $blockStateId) => $block->getStateId(), $blockStateIds);
 
-		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard->getWorldMin(),
@@ -133,7 +176,7 @@ class Cuboid extends Shape{
 					'blockCount' => $changedBlocks,
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 }

@@ -72,7 +72,7 @@ final class ClipboardPasteTask extends AsyncTask{
 
 		/** @var string[] $serialChunks */
 		$serialChunks = igbinary_unserialize($this->chunks);
-		/** @var array<int, Chunk> $chunks */
+		/** @var array<int, Chunk|null> $chunks */
 		$chunks = array_map(
 			fn(?string $serialized) => $serialized !== null ? FastChunkSerializer::deserializeTerrain($serialized) : null,
 			$serialChunks
@@ -86,7 +86,8 @@ final class ClipboardPasteTask extends AsyncTask{
 
 		foreach($chunks as $chunkHash => $c){
 			[$chunkX, $chunkZ] = morton2d_decode($chunkHash);
-			$this->prepChunkManager($manager, $chunkX, $chunkZ, $c);
+			$manager->setChunk($chunkX, $chunkZ, $c ?? ($c = new Chunk([], BiomeArray::fill(BiomeIds::OCEAN), false)));
+			$c->setTerrainDirtyFlag(Chunk::DIRTY_FLAG_BLOCKS, true);
 		}
 
 		$iterator = new SubChunkExplorer($manager);
@@ -112,20 +113,9 @@ final class ClipboardPasteTask extends AsyncTask{
 		foreach($chunks as $chunkHash => $c){
 			[$chunkX, $chunkZ] = morton2d_decode($chunkHash);
 			$chunk = $manager->getChunk($chunkX, $chunkZ) ?? throw new AssumptionFailedError("Chunk should exist");
-			$serialChunks[$chunkHash] = $c->isTerrainDirty() ? FastChunkSerializer::serializeTerrain($chunk) : null;
+			$serialChunks[$chunkHash] = $chunk->isTerrainDirty() ? FastChunkSerializer::serializeTerrain($chunk) : null;
 		}
 		$this->chunks = igbinary_serialize($serialChunks) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
-	}
-
-	private function prepChunkManager(SimpleChunkManager $manager, int $chunkX, int $chunkZ, ?Chunk &$chunk) : void{
-		$manager->setChunk($chunkX, $chunkZ, $chunk ?? new Chunk([], false));
-		if($chunk === null){
-			$chunk = $manager->getChunk($chunkX, $chunkZ);
-			if($chunk === null){
-				throw new AssumptionFailedError("We just set this chunk, so it must exist");
-			}
-			$chunk->setTerrainDirtyFlag(Chunk::DIRTY_FLAG_BLOCKS, true);
-		}
 	}
 
 	public function onCompletion() : void{

@@ -21,6 +21,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function cos;
+use function count;
 use function deg2rad;
 use function microtime;
 use function morton2d_decode;
@@ -57,7 +58,7 @@ abstract class Shape{
 	abstract public static function fromAABB(AxisAlignedBB $alignedBB) : self;
 
 	public static function validateMortonEncode(float $xDiff, float $yDiff, float $zDiff) : void{
-		if($xDiff < self::MORTON_BITS && $yDiff < self::MORTON_BITS && $zDiff < self::MORTON_BITS)
+		if($xDiff >= self::MORTON_BITS && $yDiff >= self::MORTON_BITS && $zDiff >= self::MORTON_BITS)
 			throw new \InvalidArgumentException("All axis lengths must be less than 2^20 blocks");
 	}
 
@@ -66,24 +67,10 @@ abstract class Shape{
 	 * @phpstan-return Promise<promiseReturn>
 	 */
 	final public function cut(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
-		$time = microtime(true);
-		$resolver ??= new PromiseResolver();
-
-		/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
-		$totalledResolver = new PromiseResolver();
-
-		$this->copy($world, $worldPos)->onCompletion(
-			function() use ($world, $totalledResolver) : void{
-				$this->set($world, VanillaBlocks::AIR(), true, $totalledResolver);
-			},
-			static fn() => $resolver->reject()
-		);
-		$totalledResolver->getPromise()->onCompletion(
-			static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
-			static fn() => $resolver->reject()
-		);
-
-		return $resolver->getPromise();
+		$this->clipboard->setWorldMin($worldPos)->setWorldMax(
+			$worldPos->addVector($this->clipboard->getWorldMax()->subtractVector($this->clipboard->getWorldMin()))
+		)->setFullBlocks([]); // reset the clipboard
+		return $this->set($world, VanillaBlocks::AIR(), true, $resolver);
 	}
 
 	/**
@@ -100,9 +87,30 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Paste operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Paste operation failed to complete')
+		);
+
+		if(count($this->clipboard->getBlockStateIds()) < 1){
+			$totalledResolver = new PromiseResolver();
+			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(
+				fn (array $value) => $this->paste($world, $worldPos, $replaceAir, $totalledResolver), // recursive but the clipboard is now set
+				static fn() => $resolver->reject()
+			);
+			$totalledResolver->getPromise()->onCompletion(
+				static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
+				static fn() => $resolver->reject()
+			);
+			return $resolver->getPromise();
+		}
+
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
-		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$worldPos,
@@ -120,7 +128,7 @@ abstract class Shape{
 					'blockCount' => $changedBlocks,
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 
@@ -138,9 +146,30 @@ abstract class Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Replace operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Replace operation failed to complete')
+		);
+
+		if(count($this->clipboard->getFullBlocks()) < 1){
+			$totalledResolver = new PromiseResolver();
+			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(
+				fn (array $value) => $this->replace($world, $find, $replace, $totalledResolver), // recursive but the clipboard is now set
+				static fn() => $resolver->reject()
+			);
+			$totalledResolver->getPromise()->onCompletion(
+				static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
+				static fn() => $resolver->reject()
+			);
+			return $resolver->getPromise();
+		}
+
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
-		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard->getWorldMin(),
@@ -158,7 +187,7 @@ abstract class Shape{
 					'blockCount' => $changedBlocks,
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 
@@ -169,6 +198,11 @@ abstract class Shape{
 	final public function rotate(World $world, Vector3 $worldPos, Vector3 $relativeCenter, float $roll, float $yaw, float $pitch, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
+
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Rotate operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Rotate operation failed to complete')
+		);
 
 		/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
 		$totalledResolver = new PromiseResolver();
@@ -234,6 +268,11 @@ abstract class Shape{
 	final public function translate(World $world, Vector3 $worldPos, int $direction, int $offset, bool $replaceAir, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
+
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Translate operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new \PrefixedLogger(\GlobalLogger::get(), "libEfficientWE"))->debug('Translate operation failed to complete')
+		);
 
 		/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
 		$totalledResolver = new PromiseResolver();

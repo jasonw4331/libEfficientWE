@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace libEfficientWE\shapes;
 
+use GlobalLogger;
 use InvalidArgumentException;
 use libEfficientWE\task\ClipboardPasteTask;
 use libEfficientWE\task\read\CylinderCopyTask;
@@ -16,10 +17,12 @@ use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\promise\PromiseResolver;
 use pocketmine\world\World;
+use PrefixedLogger;
 use function abs;
 use function array_filter;
 use function array_keys;
 use function array_map;
+use function array_merge;
 use function count;
 use function max;
 use function microtime;
@@ -30,6 +33,7 @@ use const ARRAY_FILTER_USE_KEY;
 /**
  * A representation of a cylinder shape. The default axis is {@link Axis::Y}, making the cylinder base at its lowest coordinate, but it can be
  * changed to {@link Axis::X} or {@link Axis::Z} to be horizontal instead.
+ * @phpstan-import-type promiseReturn from Shape
  */
 class Cylinder extends Shape{
 
@@ -86,7 +90,9 @@ class Cylinder extends Shape{
 			Axis::Z => new Vector3($radius, $radius, 0)
 		};
 
-		return new self($relativeCenterOfBase, $radius, $height, $axis);
+		$shape = new self($relativeCenterOfBase, $radius, $height, $axis);
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	/**
@@ -116,12 +122,24 @@ class Cylinder extends Shape{
 			Axis::Z => new Vector3($radius, $radius, 0)
 		};
 
-		return new self($relativeCenterOfBase, $radius, $height, $axis);
+		$shape = new self($relativeCenterOfBase, $radius, $height, $axis);
+		$shape->clipboard->setWorldMin(new Vector3($minX, $minY, $minZ))->setWorldMax(new Vector3($maxX, $maxY, $maxZ));
+		return $shape;
 	}
 
 	public function copy(World $world, Vector3 $worldPos, ?PromiseResolver $resolver = null) : Promise{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
+
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Cylinder Copy operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Failed to complete task')
+		);
+
+		if($this->clipboard->getWorldMax()->distance($this->clipboard->getWorldMin()) < 1) {
+			$resolver->reject();
+			return $resolver->getPromise();
+		}
 
 		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
@@ -133,7 +151,10 @@ class Cylinder extends Shape{
 
 		$this->clipboard->setWorldMin($worldPos)->setWorldMax($worldPos->addVector($maxVector));
 
-		$world->getServer()->getAsyncPool()->submitTask(new CylinderCopyTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new CylinderCopyTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard,
@@ -154,7 +175,7 @@ class Cylinder extends Shape{
 					'blockCount' => count($clipboard->getBlockStateIds()),
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 
@@ -162,7 +183,26 @@ class Cylinder extends Shape{
 		$time = microtime(true);
 		$resolver ??= new PromiseResolver();
 
-		[$temporaryChunkLoader, $chunkPopulationLockId, $chunks] = $this->prepWorld($world);
+		$resolver->getPromise()->onCompletion(
+			static fn(array $value) => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Cylinder Set operation completed in ' . $value['time'] . 'ms with ' . $value['blockCount'] . ' blocks changed'),
+			static fn() => (new PrefixedLogger(GlobalLogger::get(), "libEfficientWE"))->debug('Cylinder Set operation failed to complete')
+		);
+
+		if(count($this->clipboard->getFullBlocks()) < 1){
+			/** @phpstan-var PromiseResolver<promiseReturn> $totalledResolver */
+			$totalledResolver = new PromiseResolver();
+			$this->copy($world, $this->clipboard->getWorldMin())->onCompletion(
+				fn (array $value) => $this->set($world, $block, $fill, $totalledResolver), // recursive but the clipboard is now set
+				static fn() => $resolver->reject()
+			);
+			$totalledResolver->getPromise()->onCompletion(
+				static fn(array $value) => $resolver->resolve(array_merge($value, ['time' => microtime(true) - $time])),
+				static fn() => $resolver->reject()
+			);
+			return $resolver->getPromise();
+		}
+
+		[$temporaryChunkLoader, $chunkLockId, $chunks] = $this->prepWorld($world);
 
 		$blockStateIds = $fill ? $this->clipboard->getBlockStateIds() :
 			array_filter($this->clipboard->getBlockStateIds(), function(int $mortonCode) : bool{
@@ -175,14 +215,17 @@ class Cylinder extends Shape{
 			}, ARRAY_FILTER_USE_KEY);
 		$blockStateIds = array_map(static fn(?int $blockStateId) => $block->getStateId(), $blockStateIds);
 
-		$world->getServer()->getAsyncPool()->submitTask(new ClipboardPasteTask(
+		$workerPool = $world->getServer()->getAsyncPool();
+		$workerId = $workerPool->selectWorker();
+		$world->registerGeneratorToWorker($workerId);
+		$workerPool->submitTaskToWorker(new ClipboardPasteTask(
 			$world->getId(),
 			$chunks,
 			$this->clipboard->getWorldMin(),
 			$blockStateIds,
 			true,
-			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkPopulationLockId, $time, $resolver) : void{
-				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkPopulationLockId)){
+			static function(array $chunks, int $changedBlocks) use ($world, $temporaryChunkLoader, $chunkLockId, $time, $resolver) : void{
+				if(!parent::resolveWorld($world, array_keys($chunks), $temporaryChunkLoader, $chunkLockId)){
 					$resolver->reject();
 					return;
 				}
@@ -193,7 +236,7 @@ class Cylinder extends Shape{
 					'blockCount' => $changedBlocks,
 				]);
 			}
-		));
+		), $workerId);
 		return $resolver->getPromise();
 	}
 }

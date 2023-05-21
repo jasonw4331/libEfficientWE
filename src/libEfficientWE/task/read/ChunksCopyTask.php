@@ -13,7 +13,6 @@ use pocketmine\world\format\Chunk;
 use pocketmine\world\format\io\FastChunkSerializer;
 use pocketmine\world\generator\ThreadLocalGeneratorContext;
 use pocketmine\world\SimpleChunkManager;
-use pocketmine\world\World;
 use function array_map;
 use function igbinary_serialize;
 use function igbinary_unserialize;
@@ -21,7 +20,6 @@ use function morton2d_decode;
 
 /**
  * @internal
- * @phpstan-import-type ChunkPosHash from World
  * @phpstan-type OnCompletion \Closure(Clipboard) : void
  */
 abstract class ChunksCopyTask extends AsyncTask{
@@ -62,14 +60,14 @@ abstract class ChunksCopyTask extends AsyncTask{
 
 		/** @var string[] $serialChunks */
 		$serialChunks = igbinary_unserialize($this->chunks);
-		/** @var array<ChunkPosHash, Chunk> $chunks */
+		/** @var array<int, Chunk|null> $chunks */
 		$chunks = array_map(
 			fn(?string $serialized) => $serialized !== null ? FastChunkSerializer::deserializeTerrain($serialized) : null,
 			$serialChunks
 		);
 		foreach($chunks as $chunkHash => $c){
 			[$chunkX, $chunkZ] = morton2d_decode($chunkHash);
-			$this->prepChunkManager($manager, $chunkX, $chunkZ, $c);
+			$manager->setChunk($chunkX, $chunkZ, $c ?? new Chunk([], BiomeArray::fill(BiomeIds::OCEAN), false));
 		}
 
 		/** @var Clipboard $clipboard */
@@ -78,16 +76,6 @@ abstract class ChunksCopyTask extends AsyncTask{
 		$clipboard->setBlockStateIds($this->readBlocks($manager, $clipboard->getWorldMin(), $clipboard->getWorldMax()));
 
 		$this->clipboard = igbinary_serialize($clipboard) ?? throw new AssumptionFailedError("igbinary_serialize() returned null");
-	}
-
-	private function prepChunkManager(SimpleChunkManager $manager, int $chunkX, int $chunkZ, ?Chunk &$chunk) : void{
-		$manager->setChunk($chunkX, $chunkZ, $chunk ?? new Chunk([], false));
-		if($chunk === null){
-			$chunk = $manager->getChunk($chunkX, $chunkZ);
-			if($chunk === null){
-				throw new AssumptionFailedError("We just set this chunk, so it must exist");
-			}
-		}
 	}
 
 	/**

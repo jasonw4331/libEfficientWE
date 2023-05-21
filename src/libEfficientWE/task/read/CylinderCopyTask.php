@@ -37,11 +37,11 @@ class CylinderCopyTask extends ChunksCopyTask{
 		};
 
 		// loop from min to max. if coordinate is in cylinder, save blockStateId
-		for($x = 0; $x <= $worldMaxPos->x; ++$x){
+		for($x = 0; $x <= $worldMaxPos->x - $worldPos->x; ++$x){
 			$ax = (int) floor($worldPos->x + $x);
-			for($z = 0; $z <= $worldMaxPos->z; ++$z){
+			for($z = 0; $z <= $worldMaxPos->z - $worldPos->z; ++$z){
 				$az = (int) floor($worldPos->z + $z);
-				for($y = 0; $y <= $worldMaxPos->y; ++$y){
+				for($y = 0; $y <= $worldMaxPos->y - $worldPos->y; ++$y){
 					$ay = (int) floor($worldPos->y + $y);
 					// check if coordinate is in cylinder depending on axis
 					$inCylinder = match ($this->axis) {
